@@ -1,6 +1,6 @@
 # Year Roundup (prototype)
 
-A yearly story for your home: energy, lights, doors, automations, music, climate, devices added. Computed locally; nothing leaves the house.
+A yearly story for your home: energy, lights, doors, automations, music, devices added. Computed locally; nothing leaves the house.
 
 ## Install
 Copy `custom_components/year_roundup` into your HA config, restart, then add **Year Roundup** under Settings → Devices & services. A **Year Roundup** sidebar panel appears. A notification fires on 1 December.
@@ -8,7 +8,7 @@ Copy `custom_components/year_roundup` into your HA config, restart, then add **Y
 ## Where the data comes from
 | Section | Source | Backfills? |
 |---|---|---|
-| Energy, solar, hottest/coldest | Recorder long-term statistics | Yes, full year |
+| Energy, solar | Recorder long-term statistics | Yes, full year |
 | Devices added, totals | Device/entity registries (`created_at`) | Yes |
 | Lights, doors, motion, automations, music, persona, busiest day | Own counters in `.storage` | No, start at install |
 

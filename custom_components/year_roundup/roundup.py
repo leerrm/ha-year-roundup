@@ -17,7 +17,6 @@ from .const import KWH_PER_EV_KM, KWH_PER_KETTLE, SECONDS_SAVED_PER_AUTOMATION
 from .tracker import RoundupTracker
 
 _LOGGER = logging.getLogger(__name__)
-_SKIP_TEMP = ("cpu", "processor", "battery", "chip", "nvme", "disk", "soc", "gpu")
 
 
 def _name(hass: HomeAssistant, entity_id: str) -> str:
@@ -86,29 +85,6 @@ async def _energy(hass: HomeAssistant, start: datetime, end: datetime) -> dict |
         out["kettles"] = round(grid_s["total_kwh"] / KWH_PER_KETTLE)
         out["ev_km"] = round(grid_s["total_kwh"] / KWH_PER_EV_KM)
     return out
-
-
-async def _climate(hass: HomeAssistant, start: datetime, end: datetime) -> dict | None:
-    ids = [
-        s.entity_id
-        for s in hass.states.async_all("sensor")
-        if s.attributes.get("device_class") == "temperature"
-        and s.attributes.get("state_class") == "measurement"
-        and not any(word in s.entity_id for word in _SKIP_TEMP)
-    ]
-    unit = hass.config.units.temperature_unit
-    rows = await _stats(hass, start, end, ids, {"max", "min"}, {"temperature": unit})
-    hottest = coldest = None
-    for sid, series in rows.items():
-        for row in series:
-            day = dt_util.as_local(dt_util.utc_from_timestamp(row["start"])).date().isoformat()
-            if row.get("max") is not None and (hottest is None or row["max"] > hottest["value"]):
-                hottest = {"value": round(row["max"], 1), "date": day, "name": _name(hass, sid)}
-            if row.get("min") is not None and (coldest is None or row["min"] < coldest["value"]):
-                coldest = {"value": round(row["min"], 1), "date": day, "name": _name(hass, sid)}
-    if not hottest:
-        return None
-    return {"unit": unit, "hottest": hottest, "coldest": coldest}
 
 
 def _setup(hass: HomeAssistant, start: datetime) -> dict:
@@ -184,10 +160,9 @@ async def async_build_roundup(hass: HomeAssistant, tracker: RoundupTracker, year
         },
         "setup": _setup(hass, start),
     }
-    for key, fn in (("energy", _energy), ("climate", _climate)):
-        try:
-            out[key] = await fn(hass, start, end)
-        except Exception:
-            _LOGGER.exception("Failed building %s section", key)
-            out[key] = None
+    try:
+        out["energy"] = await _energy(hass, start, end)
+    except Exception:
+        _LOGGER.exception("Failed building energy section")
+        out["energy"] = None
     return out

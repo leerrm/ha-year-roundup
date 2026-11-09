@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Year Roundup",
-        "description": "Start tracking your home's year. Long-term stats (energy, temperature) are backfilled; counters like door opens and top artists start from today. Optionally pick an AI Task entity to write the captions. If it is a cloud service, your roundup summary is sent to it.",
+        "description": "Start tracking your home's year. Energy statistics are backfilled; counters like door opens and top artists start from today. Optionally pick an AI Task entity to write the captions. If it is a cloud service, your roundup summary is sent to it.",
         "data": {
           "ai_task_entity": "AI agent (optional)",
           "style": "Caption style prompt"
