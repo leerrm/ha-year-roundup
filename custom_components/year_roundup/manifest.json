@@ -1,0 +1,14 @@
+{
+  "domain": "year_roundup",
+  "name": "Year Roundup",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": ["recorder", "frontend", "http", "websocket_api"],
+  "after_dependencies": ["energy", "ai_task"],
+  "documentation": "https://github.com/your-org/year_roundup",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Year Roundup</title>
+<style>
+  :root { --fg:#fff; --muted:rgba(255,255,255,.72); --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { height:100%; background:#0b1020; color:var(--fg); font-family:var(--font); overflow:hidden; }
+  #stage { position:relative; height:100%; max-width:480px; margin:0 auto; user-select:none; cursor:pointer; }
+  .bars { position:absolute; top:12px; left:16px; right:16px; display:flex; gap:4px; z-index:5; }
+  .bars span { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.3); overflow:hidden; }
+  .bars span i { display:block; height:100%; width:0; background:#fff; }
+  .bars span.done i { width:100%; }
+  .bars span.now i { animation: fill var(--dur) linear forwards; }
+  @keyframes fill { to { width:100%; } }
+  .slide { position:absolute; inset:0; padding:64px 28px 40px; display:none; flex-direction:column; justify-content:center; gap:18px; }
+  .slide.active { display:flex; animation: pop .5s ease; }
+  @keyframes pop { from { opacity:0; transform:scale(.96); } }
+  .kicker { font-size:14px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .big { font-size:clamp(56px, 18vw, 96px); font-weight:800; line-height:.95; letter-spacing:-.03em; }
+  h2 { font-size:clamp(28px, 8vw, 40px); font-weight:800; line-height:1.1; letter-spacing:-.01em; }
+  p { font-size:18px; line-height:1.45; color:var(--muted); }
+  .emoji { font-size:80px; }
+  ol { list-style:none; display:flex; flex-direction:column; gap:10px; counter-reset:n; }
+  ol li { counter-increment:n; display:flex; align-items:baseline; gap:12px; font-size:19px; font-weight:600; }
+  ol li::before { content:counter(n); font-size:28px; font-weight:800; width:28px; opacity:.6; }
+  ol li small { margin-left:auto; color:var(--muted); font-weight:500; font-size:15px; white-space:nowrap; }
+  .chart { display:flex; align-items:flex-end; gap:3px; height:120px; }
+  .chart div { flex:1; background:rgba(255,255,255,.85); border-radius:3px 3px 0 0; min-height:2px; }
+  .chart div.hi { background:#ffd84d; }
+  .axis { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .card { background:rgba(255,255,255,.12); border-radius:16px; padding:16px; }
+  .card b { display:block; font-size:30px; font-weight:800; }
+  .card span { font-size:14px; color:var(--muted); }
+  .hint { position:absolute; bottom:14px; left:0; right:0; text-align:center; font-size:12px; color:var(--muted); }
+  .g1 { background:linear-gradient(160deg,#03a9f4,#1a237e); }
+  .g2 { background:linear-gradient(160deg,#7c4dff,#311b92); }
+  .g3 { background:linear-gradient(160deg,#ff9800,#bf360c); }
+  .g4 { background:linear-gradient(160deg,#ffca28,#e65100); }
+  .g5 { background:linear-gradient(160deg,#26a69a,#004d40); }
+  .g6 { background:linear-gradient(160deg,#ec407a,#4a148c); }
+  .g7 { background:linear-gradient(160deg,#42a5f5,#b71c1c); }
+  .g8 { background:linear-gradient(160deg,#5c6bc0,#0d1b4c); }
+  .g9 { background:linear-gradient(160deg,#18bcf2,#0b1020); }
+  .preview { position:fixed; top:22px; right:12px; z-index:6; font-size:11px; background:rgba(0,0,0,.4); padding:3px 8px; border-radius:99px; }
+</style>
+</head>
+<body>
+<div id="stage"><div class="bars" id="bars"></div><div id="slides"><section class="slide g1 active"><div class="kicker">Year Roundup</div><h2>Writing your story…</h2><p>Crunching a year of data.</p></section></div><div class="hint">Tap to continue · ← → keys</div></div>
+<script>
+const SAMPLE = {"year":2026,"home_name":"Home","persona":{"title":"The Night Owl","emoji":"🦉","blurb":"Your home was busiest around 22:00.","peak_hour":22},
+ "hours":[40,22,10,6,4,8,60,140,120,80,70,75,90,85,80,95,120,160,210,240,260,280,300,150],
+ "busiest_day":{"date":"2026-12-24","events":1342},
+ "lights":{"total_hours":4210,"top":[{"name":"Living room lamp","value":1820},{"name":"Kitchen spots","value":960},{"name":"Hallway","value":610}],"toggles":18240},
+ "doors":{"total":6120,"top":[{"name":"Front door","value":3210},{"name":"Back door","value":1904},{"name":"Fridge","value":1006}]},
+ "motion":48210,
+ "automations":{"runs":52108,"top":[{"name":"Hallway motion light","value":14021},{"name":"Good morning","value":365},{"name":"Bedtime","value":352}],"hours_saved":144.7},
+ "music":{"hours":612,"top_artists":[{"name":"Fleetwood Mac","value":412},{"name":"Daft Punk","value":301},{"name":"Bonobo","value":277}],"top_tracks":[{"name":"Daft Punk — Digital Love","value":58}]},
+ "people":{"arrivals":702,"top_zones":[{"name":"Work","value":214},{"name":"Gym","value":96}]},
+ "setup":{"devices_total":184,"devices_added":37,"entities_total":1290,"integrations":42,"automations":61,"newest_device":"Voice PE (Kitchen)"},
+ "energy":{"grid":{"total_kwh":3412.6,"monthly_kwh":[420,380,330,260,210,180,170,175,220,290,360,417],"peak_day":{"date":"2026-01-14","kwh":24.1}},"solar":{"total_kwh":2840.2,"monthly_kwh":[60,110,220,320,390,420,410,360,270,160,80,40],"peak_day":{"date":"2026-06-21","kwh":21.3}},"kettles":31024,"ev_km":20074},
+ "climate":{"unit":"°C","hottest":{"value":34.2,"date":"2026-07-18","name":"Garden"},"coldest":{"value":-6.1,"date":"2026-01-29","name":"Garden"}}};
+
+const SAMPLE_AI = {ai_agent:"Local Ollama", ai:{intro:"Grab a cuppa. Your house has been keeping notes all year, and frankly, it has opinions.",persona:"Peak activity at 22:00. Your home sleeps when you do, which is to say: barely.",energy:"3,413 kWh, mostly in January. That 24.1 kWh day on the 14th? The heating remembers.",automations:"52,108 runs. The hallway motion light did 14,021 of them. Give it a raise.",music:"612 hours, and Fleetwood Mac took 412 plays. Go your own way, but apparently not far from 'Dreams'.",outro:"Same time next year? The kettle's already on."}};
+const fmt = n => Number(n).toLocaleString();
+const date = d => new Date(d + "T12:00").toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const list = (items, unit) => `<ol>${items.map(i => `<li>${esc(i.name)}<small>${fmt(i.value)} ${unit}</small></li>`).join("")}</ol>`;
+const bars = (vals, hiIdx) => { const m = Math.max(...vals, 1); return `<div class="chart">${vals.map((v,i)=>`<div class="${i===hiIdx?"hi":""}" style="height:${v/m*100}%"></div>`).join("")}</div>`; };
+
+function build(d) {
+  const s = [];
+  const ai = d.ai || {};
+  const cap = (key, html) => ai[key] ? `<p>${esc(ai[key])}</p>` : html;
+  s.push(["g1", `<div class="kicker">${esc(d.home_name)}</div><div class="big">${d.year}</div><h2>Your home's year, wrapped up.</h2>${cap('intro', '<p>Here\'s what happened under your roof.</p>')}`]);
+  const peak = d.persona.peak_hour;
+  s.push(["g2", `<div class="kicker">Your home personality</div><div class="emoji">${d.persona.emoji}</div><h2>${esc(d.persona.title)}</h2>${cap('persona', `<p>${esc(d.persona.blurb)}</p>`)}${d.hours.some(x=>x)?bars(d.hours, peak)+'<div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>':""}`]);
+  const g = d.energy && d.energy.grid;
+  if (g) s.push(["g3", `<div class="kicker">Energy</div><div class="big">${fmt(Math.round(g.total_kwh))}</div><h2>kWh from the grid</h2>${cap('energy', `<p>Enough to boil <b>${fmt(d.energy.kettles)}</b> kettles or drive an EV <b>${fmt(d.energy.ev_km)} km</b>.</p>`)}${bars(g.monthly_kwh, g.monthly_kwh.indexOf(Math.max(...g.monthly_kwh)))}<div class="axis"><span>Jan</span><span>Jun</span><span>Dec</span></div><p>Hungriest day: ${date(g.peak_day.date)} (${g.peak_day.kwh} kWh).</p>`]);
+  const so = d.energy && d.energy.solar;
+  if (so) s.push(["g4", `<div class="kicker">Sunshine</div><div class="emoji">☀️</div><div class="big">${fmt(Math.round(so.total_kwh))}</div><h2>kWh made by your panels</h2>${cap('solar', `<p>Best day: ${date(so.peak_day.date)}, ${so.peak_day.kwh} kWh.</p>`)}`]);
+  if (d.lights.total_hours) s.push(["g8", `<div class="kicker">Lights</div><div class="big">${fmt(d.lights.total_hours)}</div><h2>hours of light</h2>${cap('lights', `<p>Flipped ${fmt(d.lights.toggles)} times. The brightest stars:</p>`)}${list(d.lights.top, "h")}`]);
+  if (d.doors.total) s.push(["g5", `<div class="kicker">Comings & goings</div><div class="big">${fmt(d.doors.total)}</div><h2>doors opened</h2>${cap('doors', `<p>That's ${Math.round(d.doors.total/365)} a day.</p>`)}${list(d.doors.top, "×")}`]);
+  if (d.automations.runs) s.push(["g9", `<div class="kicker">Automations</div><div class="big">${fmt(d.automations.runs)}</div><h2>times your home did it for you</h2>${cap('automations', `<p>Roughly <b>${d.automations.hours_saved} hours</b> you didn't spend reaching for a switch.</p>`)}${list(d.automations.top, "runs")}`]);
+  if (d.music.top_artists.length) s.push(["g6", `<div class="kicker">Soundtrack</div><div class="big">${fmt(d.music.hours)}</div><h2>hours of music</h2>${cap('music', '<p>Your top artists:</p>')}${list(d.music.top_artists, "plays")}${d.music.top_tracks[0]?`<p>On repeat: <b>${esc(d.music.top_tracks[0].name)}</b></p>`:""}`]);
+  const c = d.climate;
+  if (c) s.push(["g7", `<div class="kicker">Weather report</div><div class="grid2"><div class="card"><span>🔥 Hottest</span><b>${c.hottest.value}${c.unit}</b><span>${esc(c.hottest.name)}<br>${date(c.hottest.date)}</span></div><div class="card"><span>🧊 Coldest</span><b>${c.coldest.value}${c.unit}</b><span>${esc(c.coldest.name)}<br>${date(c.coldest.date)}</span></div></div>${cap('climate', d.busiest_day?`<p>Busiest day at home: <b>${date(d.busiest_day.date)}</b> with ${fmt(d.busiest_day.events)} events.</p>`:"")}`]);
+  const st = d.setup;
+  s.push(["g2", `<div class="kicker">Your smart home grew</div><div class="big">+${st.devices_added}</div><h2>new devices this year</h2>${cap('setup', st.newest_device?`<p>Latest arrival: <b>${esc(st.newest_device)}</b></p>`:"")}<div class="grid2"><div class="card"><b>${fmt(st.devices_total)}</b><span>devices</span></div><div class="card"><b>${fmt(st.entities_total)}</b><span>entities</span></div><div class="card"><b>${st.integrations}</b><span>integrations</span></div><div class="card"><b>${st.automations}</b><span>automations</span></div></div>`]);
+  s.push(["g1", `<div class="kicker">That's a wrap</div><h2>${d.year} was a big year for ${esc(d.home_name)}.</h2>${cap('outro', '')}<p>${d.ai ? `Every number was calculated on your own hardware. Captions written by ${esc(d.ai_agent || 'your AI agent')}.` : 'Every number here was calculated on your own hardware. None of it left your home.'}</p><p style="font-size:14px">Tap to watch again.</p>`]);
+  return s;
+}
+
+let slides = [], idx = 0, timer;
+const DUR = 7000;
+function show(i) {
+  idx = (i + slides.length) % slides.length;
+  document.querySelectorAll(".slide").forEach((el, j) => { el.classList.toggle("active", j === idx); });
+  document.querySelectorAll(".bars span").forEach((el, j) => { el.className = j < idx ? "done" : j === idx ? "now" : ""; el.innerHTML = "<i></i>"; });
+  clearTimeout(timer);
+  if (idx < slides.length - 1) timer = setTimeout(() => show(idx + 1), DUR);
+}
+function render(d, preview) {
+  slides = build(d);
+  document.getElementById("slides").innerHTML = slides.map(([g, h]) => `<section class="slide ${g}">${h}</section>`).join("") + (preview ? '<div class="preview">Preview data</div>' : "");
+  document.getElementById("bars").innerHTML = slides.map(() => "<span><i></i></span>").join("");
+  document.documentElement.style.setProperty("--dur", DUR + "ms");
+  const start = Number(new URLSearchParams(location.search).get("slide") || 0);
+  show(start);
+}
+document.getElementById("stage").addEventListener("click", e => show(e.clientX < innerWidth / 3 ? idx - 1 : idx + 1));
+addEventListener("keydown", e => { if (e.key === "ArrowRight") show(idx + 1); if (e.key === "ArrowLeft") show(idx - 1); });
+
+(async () => {
+  let hass;
+  try { hass = window.parent.document.querySelector("home-assistant").hass; } catch (_) {}
+  const q = new URLSearchParams(location.search);
+  if (!hass) return render(q.get("ai") ? { ...SAMPLE, ...SAMPLE_AI } : SAMPLE, true);
+  const year = Number(new URLSearchParams(location.search).get("year")) || undefined;
+  try { render(await hass.callWS({ type: "year_roundup/get", refresh: q.has("refresh"), ...(year && { year }) }), false); }
+  catch (err) { console.error(err); render(SAMPLE, true); }
+})();
+</script>
+</body>
+</html>
