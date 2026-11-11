@@ -14,7 +14,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from .const import KWH_PER_EV_KM, KWH_PER_KETTLE, SECONDS_SAVED_PER_AUTOMATION
-from .tracker import RoundupTracker
+from .history import async_read_year
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,11 +31,11 @@ def _top(hass: HomeAssistant, bucket: dict[str, float], n: int = 5, names: bool 
     ]
 
 
-async def _stats(hass, start, end, ids, types, units=None):
+async def _stats(hass, start, end, ids, types, units=None, period="day"):
     if not ids:
         return {}
     return await get_instance(hass).async_add_executor_job(
-        statistics_during_period, hass, start, end, set(ids), "day", units, set(types)
+        statistics_during_period, hass, start, end, set(ids), period, units, set(types)
     )
 
 
@@ -81,6 +81,17 @@ async def _energy(hass: HomeAssistant, start: datetime, end: datetime) -> dict |
 
     grid_s, solar_s = summarise(grid), summarise(solar)
     out = {"grid": grid_s, "solar": solar_s}
+    # Year-long energy-by-hour profile: long-term stats exist for the whole year
+    hourly = await _stats(hass, start, end, grid, {"change"}, {"energy": "kWh"}, "hour")
+    profile, counts = [0.0] * 24, [0] * 24
+    for sid in grid:
+        for row in hourly.get(sid, []):
+            if row.get("change") is not None:
+                h = dt_util.as_local(dt_util.utc_from_timestamp(row["start"])).hour
+                profile[h] += row["change"]
+                counts[h] += 1
+    if any(counts):
+        out["hourly_profile"] = [round(p / c, 3) if c else 0 for p, c in zip(profile, counts)]
     if grid_s:
         out["kettles"] = round(grid_s["total_kwh"] / KWH_PER_KETTLE)
         out["ev_km"] = round(grid_s["total_kwh"] / KWH_PER_EV_KM)
@@ -104,24 +115,36 @@ def _setup(hass: HomeAssistant, start: datetime) -> dict:
     }
 
 
-def _persona(hours: list[int], automation_runs: int, manual: int) -> dict:
+def _persona(hours: list[float], automation_runs: int, manual: int, source: str = "activity") -> dict:
     if sum(hours) == 0:
         return {"title": "The Newcomer", "emoji": "🌱", "blurb": "Your story is just getting started."}
     peak = max(range(24), key=lambda h: hours[h])
+    what = "used the most energy" if source == "energy" else "was busiest"
     if automation_runs > manual * 3:
         return {"title": "The Automation Wizard", "emoji": "🧙", "blurb": "Your home mostly runs itself.", "peak_hour": peak}
     if peak >= 22 or peak <= 3:
-        return {"title": "The Night Owl", "emoji": "🦉", "blurb": f"Your home was busiest around {peak:02d}:00.", "peak_hour": peak}
+        return {"title": "The Night Owl", "emoji": "🦉", "blurb": f"Your home {what} around {peak:02d}:00.", "peak_hour": peak}
     if 5 <= peak <= 8:
-        return {"title": "The Early Bird", "emoji": "🐦", "blurb": f"Things got going around {peak:02d}:00.", "peak_hour": peak}
-    return {"title": "The Homebody", "emoji": "🛋️", "blurb": f"Peak activity hit at {peak:02d}:00.", "peak_hour": peak}
+        return {"title": "The Early Bird", "emoji": "🐦", "blurb": f"Your home {what} around {peak:02d}:00.", "peak_hour": peak}
+    return {"title": "The Homebody", "emoji": "🛋️", "blurb": f"Your home {what} around {peak:02d}:00.", "peak_hour": peak}
 
 
-async def async_build_roundup(hass: HomeAssistant, tracker: RoundupTracker, year: int) -> dict[str, Any]:
+async def async_build_roundup(hass: HomeAssistant, year: int) -> dict[str, Any]:
     tz = dt_util.get_default_time_zone()
     start = datetime(year, 1, 1, tzinfo=tz)
     end = min(datetime(year + 1, 1, 1, tzinfo=tz), dt_util.now())
-    y = tracker.data.get(str(year)) or {}
+    y = await async_read_year(hass, start, end)
+    try:
+        energy = await _energy(hass, start, end)
+    except Exception:
+        _LOGGER.exception("Failed building energy section")
+        energy = None
+
+    # Activity-by-hour needs a decent span of history; otherwise use the
+    # year-long energy profile from long-term statistics.
+    hours, hours_source = y["hours"], "activity"
+    if (y["coverage"]["days"] < 60 or not any(hours)) and energy and energy.get("hourly_profile"):
+        hours, hours_source = energy["hourly_profile"], "energy"
 
     lights = {k: v for k, v in y.get("on_seconds", {}).items() if k.startswith("light.")}
     automation_runs = int(sum(y.get("automations", {}).values()))
@@ -131,9 +154,10 @@ async def async_build_roundup(hass: HomeAssistant, tracker: RoundupTracker, year
     out: dict[str, Any] = {
         "year": year,
         "home_name": hass.config.location_name,
-        "tracking_since": y.get("first_seen"),
-        "persona": _persona(y.get("hours", [0] * 24), automation_runs, manual),
-        "hours": y.get("hours", [0] * 24),
+        "coverage": y["coverage"],
+        "persona": _persona(hours, automation_runs, manual, hours_source),
+        "hours": hours,
+        "hours_source": hours_source,
         "busiest_day": (
             dict(zip(("date", "events"), max(days.items(), key=lambda kv: kv[1]))) if days else None
         ),
@@ -159,10 +183,8 @@ async def async_build_roundup(hass: HomeAssistant, tracker: RoundupTracker, year
             "top_zones": _top(hass, y.get("zones", {}), 3, names=False),
         },
         "setup": _setup(hass, start),
+        "energy": energy,
     }
-    try:
-        out["energy"] = await _energy(hass, start, end)
-    except Exception:
-        _LOGGER.exception("Failed building energy section")
-        out["energy"] = None
+    if energy:
+        energy.pop("hourly_profile", None)
     return out
