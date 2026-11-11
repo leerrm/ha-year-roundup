@@ -1,6 +1,7 @@
 """End-to-end tests against a real recorder (SQLite) and statistics."""
 
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -106,10 +107,13 @@ async def test_recorder_history(recorder_mock, hass: HomeAssistant):
 async def test_websocket_end_to_end(recorder_mock, hass: HomeAssistant, hass_ws_client):
     await _seed_statistics(hass)
     assert await async_setup_component(hass, "http", {})
+    hass.config.components.add("frontend")  # frontend package not installed in tests
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
     entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    with patch("homeassistant.components.frontend.async_register_built_in_panel") as panel:
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    assert panel.called
 
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": f"{DOMAIN}/get"})
