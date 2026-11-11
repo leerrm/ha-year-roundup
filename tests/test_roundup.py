@@ -57,11 +57,22 @@ async def _seed_statistics(hass: HomeAssistant):
     hass.states.async_set("sensor.grid_import", "0", {"device_class": "energy", "state_class": "total_increasing", "unit_of_measurement": "kWh"})
     rows = [{"start": t, "state": (i + 1) * 0.5, "sum": (i + 1) * 0.5} for i, t in enumerate(_hours(30))]
     async_import_statistics(hass, _meta("sensor.grid_import", "kWh", "energy", sum_=True), rows)
+    # Grid cost (0.30/kWh) and a home battery
+    hass.states.async_set("sensor.grid_cost", "0", {"state_class": "total_increasing", "unit_of_measurement": "EUR"})
+    rows = [{"start": t, "state": (i + 1) * 0.15, "sum": (i + 1) * 0.15} for i, t in enumerate(_hours(30))]
+    async_import_statistics(hass, _meta("sensor.grid_cost", "EUR", None, sum_=True), rows)
+    for sid, per_h in (("sensor.batt_out", 0.2), ("sensor.batt_in", 0.25)):
+        hass.states.async_set(sid, "0", {"device_class": "energy", "state_class": "total_increasing", "unit_of_measurement": "kWh"})
+        rows = [{"start": t, "state": (i + 1) * per_h, "sum": (i + 1) * per_h} for i, t in enumerate(_hours(30))]
+        async_import_statistics(hass, _meta(sid, "kWh", "energy", sum_=True), rows)
     await async_wait_recording_done(hass)
 
 
 PREFS = {
-    "energy_sources": [{"type": "grid", "flow_from": [{"stat_energy_from": "sensor.grid_import"}], "flow_to": []}],
+    "energy_sources": [
+        {"type": "grid", "flow_from": [{"stat_energy_from": "sensor.grid_import", "stat_cost": "sensor.grid_cost"}], "flow_to": []},
+        {"type": "battery", "stat_energy_from": "sensor.batt_out", "stat_energy_to": "sensor.batt_in"},
+    ],
     "device_consumption": [{"stat_consumption": "sensor.heat_pump_energy"}],
 }
 
@@ -106,5 +117,17 @@ async def test_websocket_end_to_end(recorder_mock, hass: HomeAssistant, hass_ws_
     assert "climate" not in r and "lights" not in r and "automations" not in r
     assert r["persona"]["peak_hour"] is not None
     assert r["energy"]["grid"]["total_kwh"] > 0
+    assert r["slides"][0] == "numbers" and r["slides"][-1] == "share"
+    assert {"personality", "top_devices"} <= set(r["slides"])
+    assert r["on_repeat"]["name"] == "Living room TV"
+    cost = r["energy"]["cost"]
+    assert cost["spent"] == pytest.approx(cost["price_kwh"] * r["energy"]["grid"]["total_kwh"], rel=0.02)
+    assert cost["price_kwh"] == pytest.approx(0.30, abs=0.01)
+    assert r["energy"]["battery"]["efficiency_pct"] == 80
+
+    await client.send_json({"id": 2, "type": f"{DOMAIN}/get", "all": True})
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    assert len(msg["result"]["slides"]) >= len(r["slides"])
     assert r["devices"]["top"][0]["name"] == "Heat pump"
     assert r["ai"] is None

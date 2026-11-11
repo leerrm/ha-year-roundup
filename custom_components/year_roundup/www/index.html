@@ -8,34 +8,44 @@
   :root { --fg:#fff; --muted:rgba(255,255,255,.72); --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   * { box-sizing:border-box; margin:0; padding:0; }
   html,body { height:100%; background:#0b1020; color:var(--fg); font-family:var(--font); overflow:hidden; }
-  #stage { position:relative; height:100%; max-width:480px; margin:0 auto; user-select:none; cursor:pointer; }
-  .bars { position:absolute; top:12px; left:16px; right:16px; display:flex; gap:4px; z-index:5; }
+  #stage { position:relative; height:100%; max-width:480px; margin:0 auto; user-select:none; cursor:pointer; overflow:hidden; }
+  .bars { position:absolute; top:12px; left:16px; right:16px; display:flex; gap:3px; z-index:5; }
   .bars span { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.3); overflow:hidden; }
   .bars span i { display:block; height:100%; width:0; background:#fff; }
   .bars span.done i { width:100%; }
   .bars span.now i { animation: fill var(--dur) linear forwards; }
   @keyframes fill { to { width:100%; } }
-  .slide { position:absolute; inset:0; padding:64px 28px 40px; display:none; flex-direction:column; justify-content:center; gap:18px; }
+  .slide { position:absolute; inset:0; padding:64px 28px 40px; display:none; flex-direction:column; justify-content:center; gap:16px; overflow:hidden; }
   .slide.active { display:flex; animation: pop .5s ease; }
+  .slide > * { position:relative; z-index:1; }
   @keyframes pop { from { opacity:0; transform:scale(.96); } }
   .kicker { font-size:14px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
-  .big { font-size:clamp(56px, 18vw, 96px); font-weight:800; line-height:.95; letter-spacing:-.03em; }
-  h2 { font-size:clamp(28px, 8vw, 40px); font-weight:800; line-height:1.1; letter-spacing:-.01em; }
+  .big { font-size:clamp(52px, 17vw, 92px); font-weight:800; line-height:.95; letter-spacing:-.03em; }
+  h2 { font-size:clamp(26px, 7.5vw, 38px); font-weight:800; line-height:1.1; letter-spacing:-.01em; }
   p { font-size:18px; line-height:1.45; color:var(--muted); }
-  .emoji { font-size:80px; }
+  p b { color:var(--fg); }
+  .small { font-size:13px; }
+  .emoji { font-size:76px; line-height:1; }
   ol { list-style:none; display:flex; flex-direction:column; gap:10px; counter-reset:n; }
   ol li { counter-increment:n; display:flex; align-items:baseline; gap:12px; font-size:19px; font-weight:600; }
   ol li::before { content:counter(n); font-size:28px; font-weight:800; width:28px; opacity:.6; }
   ol li small { margin-left:auto; color:var(--muted); font-weight:500; font-size:15px; white-space:nowrap; }
-  .chart { display:flex; align-items:flex-end; gap:3px; height:120px; }
+  .chart { display:flex; align-items:flex-end; gap:3px; height:110px; }
   .chart div { flex:1; background:rgba(255,255,255,.85); border-radius:3px 3px 0 0; min-height:2px; }
   .chart div.hi { background:#ffd84d; }
   .axis { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .card { background:rgba(255,255,255,.12); border-radius:16px; padding:16px; }
-  .card b { display:block; font-size:30px; font-weight:800; }
+  .card { background:rgba(255,255,255,.13); border-radius:16px; padding:14px 16px; }
+  .card b { display:block; font-size:28px; font-weight:800; line-height:1.1; }
   .card span { font-size:14px; color:var(--muted); }
-  .hint { position:absolute; bottom:14px; left:0; right:0; text-align:center; font-size:12px; color:var(--muted); }
+  .orb { position:absolute; border-radius:50%; filter:blur(50px); opacity:.9; z-index:0; animation: drift 9s ease-in-out infinite alternate; }
+  @keyframes drift { to { transform:translate(30px,-40px) scale(1.15); } }
+  .btn { align-self:flex-start; background:#fff; color:#111; border:0; border-radius:99px; padding:12px 20px; font:600 16px var(--font); cursor:pointer; }
+  canvas.share { width:100%; max-height:52vh; object-fit:contain; border-radius:16px; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+  .up { color:#ffab91; } .down { color:#a5d6a7; }
+  .card b span { font-size:inherit; }
+  .card b .good { color:#b9f6ca; } .card b .bad { color:#ffab91; }
+  .hint { position:absolute; bottom:14px; left:0; right:0; text-align:center; font-size:12px; color:var(--muted); z-index:2; }
   .g1 { background:linear-gradient(160deg,#03a9f4,#1a237e); }
   .g2 { background:linear-gradient(160deg,#7c4dff,#311b92); }
   .g3 { background:linear-gradient(160deg,#ff9800,#bf360c); }
@@ -45,6 +55,7 @@
   .g7 { background:linear-gradient(160deg,#42a5f5,#b71c1c); }
   .g8 { background:linear-gradient(160deg,#5c6bc0,#0d1b4c); }
   .g9 { background:linear-gradient(160deg,#18bcf2,#0b1020); }
+  .g0 { background:#0b1020; }
   .preview { position:fixed; top:22px; right:12px; z-index:6; font-size:11px; background:rgba(0,0,0,.4); padding:3px 8px; border-radius:99px; }
 </style>
 </head>
@@ -52,96 +63,174 @@
 <div id="stage"><div class="bars" id="bars"></div><div id="slides"><section class="slide g1 active"><div class="kicker">Year Roundup</div><h2>Writing your story…</h2><p>Crunching a year of data.</p></section></div><div class="hint">Tap to continue · ← → keys</div></div>
 <script>
 const SAMPLE = {"year":2026,"home_name":"Home",
- "persona":{"title":"The Homebody","emoji":"🛋️","blurb":"Your home used the most energy around 18:00.","peak_hour":18},
+ "persona":{"type":"seasonal_swinger","title":"The Seasonal Swinger","emoji":"🍂","blurb":"Winter days used 2.3× a summer day.","peak_hour":18},
+ "aura":{"colors":["hsl(330 80% 55%)","hsl(210 85% 50%)"],"words":"evening magenta with a frost blue glow"},
  "hours":[0.21,0.18,0.16,0.15,0.15,0.17,0.3,0.52,0.48,0.36,0.33,0.34,0.38,0.35,0.33,0.36,0.45,0.6,0.82,0.74,0.66,0.55,0.44,0.3],
- "setup":{"devices_total":184,"devices_added":37,"entities_total":1290,"integrations":42,"automations":61,"automations_added":14,"newest_device":"Voice PE (Kitchen)"},
- "energy":{"grid":{"total_kwh":3412.6,"monthly_kwh":[420,380,330,260,210,180,170,175,220,290,360,417],"peak_day":{"date":"2026-01-14","kwh":24.1}},"solar":{"total_kwh":2840.2,"monthly_kwh":[60,110,220,320,390,420,410,360,270,160,80,40],"peak_day":{"date":"2026-06-21","kwh":21.3}},"export_kwh":910,"self_powered_pct":38,"standby_w":140,"fact":"enough to drive an EV 9,800 miles","solar_fact":"enough to drive an EV from Land's End to John o' Groats 9.4 times","standby_fact":"like leaving 18 LED bulbs on all year"},
+ "setup":{"devices_total":184,"devices_added":37,"entities_total":1290,"integrations":42,"automations":61,"automations_added":14,"newest_device":"Voice PE (Kitchen)","first_device":"Hallway motion sensor"},
+ "energy":{"grid":{"total_kwh":3412.6,"monthly_kwh":[420,380,330,260,210,180,170,175,220,290,360,417],"peak_day":{"date":"2026-12-25","kwh":41.2}},
+   "solar":{"total_kwh":2840.2,"monthly_kwh":[60,110,220,320,390,420,410,360,270,160,80,40],"peak_day":{"date":"2026-06-21","kwh":21.3}},
+   "export_kwh":910,"self_powered_pct":38,"standby_w":140,
+   "battery":{"discharged_kwh":2104,"charged_kwh":2350,"efficiency_pct":90},
+   "weekdays":{"avg_kwh":[8.9,8.6,8.7,8.8,9.1,10.9,10.4],"busiest":"Saturday","quietest":"Tuesday","spread_pct":27,"weekend_ratio":1.19},
+   "seasons":{"share_pct":{"Winter":38,"Spring":22,"Summer":16,"Autumn":24},"top":"Winter","complete":true},
+   "quiet_hour":{"hour":3,"watts":150},"day_of_year":{"date":"2026-12-25","kwh":41.2,"times_normal":4.4,"weekday":"Friday"},
+   "sun_streak":{"days":23,"from":"2026-06-04","to":"2026-06-26","total_days":96},
+   "cost":{"currency":"GBP","spent":1140.2,"earned":136.5,"cheapest":{"month":"June","value":41.3},"dearest":{"month":"January","value":163.9},"per_day":3.12,"price_kwh":0.334},
+   "fact":"enough to drive an EV 9,800 miles","solar_fact":"enough to drive an EV from Land's End to John o' Groats 9.4 times","standby_fact":"like leaving 18 LED bulbs on all year","standby_cost":410,"export_fact":"a neighbour's electricity for 4.3 months"},
+ "last_year":{"grid_kwh":4160,"solar_kwh":2610,"grid_change_pct":-18,"solar_change_pct":9},
  "devices":{"top":[{"name":"Heat pump","kwh":1840},{"name":"EV charger","kwh":1210},{"name":"Tumble dryer","kwh":310},{"name":"Fridge freezer","kwh":240}],"total_kwh":3700},
- "screen_time":{"top":[{"name":"Living room TV","hours":1260,"avg_w":38},{"name":"Gaming PC","hours":640,"avg_w":61},{"name":"Coffee machine","hours":210,"avg_w":12}],"fact":"14% of the whole year"},
+ "on_repeat":{"name":"Coffee machine","days_on":361,"days_tracked":365,"hours":210},
+ "screen_time":{"top":[{"name":"Living room TV","hours":1260},{"name":"Gaming PC","hours":640},{"name":"Coffee machine","hours":210}],"fact":"14% of the whole year"},
  "always_on":{"name":"Network rack","hours":8760,"avg_w":42},
- "water":{"litres":148000,"peak_day":{"date":"2026-07-19","value":1220},"fact":"enough to fill 1,900 baths"},
- "batteries":{"replaced":9,"hungriest":{"name":"Front door lock","swaps":3},"top":[]},
- "air":{"stuffiest":{"name":"Bedroom","avg_ppm":980,"worst":{"date":"2026-02-11","ppm":2210}},"freshest":{"name":"Kitchen","avg_ppm":610},"rooms":4},
- "steps":{"total":2410000,"top":[{"name":"Sam's phone steps","steps":1380000},{"name":"Alex's phone steps","steps":1030000}],"fact":"46 marathons around the house"},
+ "water":{"litres":148000,"peak_day":{"date":"2026-07-19","value":1220},"peak_hour":7,"fact":"enough to fill 1,900 baths"},
+ "gas":{"value":850,"unit":"m³","peak_day":{"date":"2026-01-29","value":14},"fact":"enough to heat 3,400 hot baths"},
+ "batteries":{"replaced":9,"hungriest":{"name":"Front door lock","swaps":3},"top":[],"fact":"0.8 battery swaps a month"},
+ "air":{"stuffiest":{"name":"Bedroom","avg_ppm":980,"hours_over_1000":410,"worst":{"date":"2026-02-11","ppm":2210}},"freshest":{"name":"Kitchen","avg_ppm":610},"rooms":4},
+ "steps":{"total":2410000,"top":[{"name":"Sam","steps":1380000},{"name":"Alex","steps":1030000}],"fact":"46 marathons around the house"},
  "distance":{"top":[{"name":"Car odometer","km":11240},{"name":"Robot vacuum","km":96}]},
  "data":{"name":"Router download","gb":4820},
  "counters":{"top":[{"name":"Printer pages","value":1320,"unit":"pages"}]},
- "rain":{"mm":742,"wettest_day":{"date":"2026-10-03","value":41}}};
+ "rain":{"mm":742,"wettest_day":{"date":"2026-10-03","value":41}},
+ "slides":["numbers","personality","aura","energy","top_devices","on_repeat","screen_time","day_of_year","season","weekdays","quiet_hour","vampire","bill","solar","sun_streak","home_battery","glow_up","water","gas","air","out_and_about","rain","battery_graveyard","odds","new_arrivals","share"]};
 
-const SAMPLE_AI = {ai_agent:"Local Ollama", ai:{intro:"Grab a cuppa. Your house has been keeping notes all year, and frankly, it has opinions.",energy:"3,413 kWh, mostly in January. That 24.1 kWh day on the 14th? The heating remembers.",devices:"The heat pump ate 1,840 kWh. Worth every cosy minute.",outro:"Same time next year? The kettle's already on."}};
+const SAMPLE_AI = {ai_agent:"Local Ollama", ai:{intro:"Grab a cuppa. Your house has been keeping notes all year, and frankly, it has opinions.",day_of_year:"Christmas Day: 41 kWh. Somebody's turkey had the oven on since dawn.",top_devices:"The heat pump ate 1,840 kWh. Worth every cosy minute.",outro:"Same time next year? The kettle's already on."}};
+
+// ---------- helpers ----------
 const fmt = n => Number(n).toLocaleString();
+const compact = n => new Intl.NumberFormat(undefined, { notation:"compact", maximumFractionDigits:1 }).format(n);
 const date = d => new Date(d + "T12:00").toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
 const short = d => new Date(d + "T12:00").toLocaleDateString(undefined, { day:"numeric", month:"short" });
+const hr = h => new Date(2000,0,1,h).toLocaleTimeString(undefined, { hour:"numeric" });
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const list = (items, unit, key="value") => `<ol>${items.map(i => `<li>${esc(i.name)}<small>${fmt(i[key])} ${unit}</small></li>`).join("")}</ol>`;
-const bars = (vals, hiIdx) => { const m = Math.max(...vals, 1); return `<div class="chart">${vals.map((v,i)=>`<div class="${i===hiIdx?"hi":""}" style="height:${v/m*100}%"></div>`).join("")}</div>`; };
+const money = (v, cur) => { try { return new Intl.NumberFormat(undefined,{style:"currency",currency:cur||"EUR",maximumFractionDigits:0}).format(v); } catch(_) { return fmt(Math.round(v)); } };
+const list = (items, unit, key="value") => `<ol>${items.map(i => `<li>${esc(i.name)}<small>${fmt(Math.round(i[key]))} ${unit}</small></li>`).join("")}</ol>`;
+const bars = (vals, hiIdx) => { const m = Math.max(...vals, 1e-9); return `<div class="chart">${vals.map((v,i)=>`<div class="${i===hiIdx?"hi":""}" style="height:${v/m*100}%"></div>`).join("")}</div>`; };
 const fact = f => f ? `<p>That's <b>${esc(f)}</b>.</p>` : "";
+const months = '<div class="axis"><span>Jan</span><span>Jun</span><span>Dec</span></div>';
+const hoursAxis = '<div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>';
+const pct = (v, upIsGood) => `<span class="${(v>0)===upIsGood?"good":"bad"}">${v>0?"+":""}${v}%</span>`;
 
-function build(d) {
-  const s = [];
-  const ai = d.ai || {};
-  const cap = (key, html) => ai[key] ? `<p>${esc(ai[key])}</p>` : html;
-  const months = '<div class="axis"><span>Jan</span><span>Jun</span><span>Dec</span></div>';
-
-  s.push(["g1", `<div class="kicker">${esc(d.home_name)}</div><div class="big">${d.year}</div><h2>Your home's year, wrapped up.</h2>${cap('intro', '<p>Here\'s what happened under your roof.</p>')}`]);
-
-  if (d.persona) s.push(["g2", `<div class="kicker">Your home personality</div><div class="emoji">${d.persona.emoji}</div><h2>${esc(d.persona.title)}</h2>${cap('persona', `<p>${esc(d.persona.blurb)}</p>`)}${bars(d.hours, d.persona.peak_hour)}<div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div><p style="font-size:13px">Average energy use by hour, all year</p>`]);
-
-  const e = d.energy || {}, g = e.grid;
-  if (g) s.push(["g3", `<div class="kicker">Energy</div><div class="big">${fmt(Math.round(g.total_kwh))}</div><h2>kWh from the grid</h2>${cap('energy', fact(e.fact))}${bars(g.monthly_kwh, g.monthly_kwh.indexOf(Math.max(...g.monthly_kwh)))}${months}<p>Hungriest day: ${date(g.peak_day.date)} (${g.peak_day.kwh} kWh).</p>`]);
-  const so = e.solar;
-  if (so) s.push(["g4", `<div class="kicker">Sunshine</div><div class="big">${fmt(Math.round(so.total_kwh))}</div><h2>kWh made by your panels</h2>${cap('solar', fact(e.solar_fact))}<div class="grid2">${e.self_powered_pct!=null?`<div class="card"><b>${e.self_powered_pct}%</b><span>of your power was your own</span></div>`:""}${e.export_kwh?`<div class="card"><b>${fmt(Math.round(e.export_kwh))}</b><span>kWh sent to the grid</span></div>`:""}</div><p>Best day: ${date(so.peak_day.date)}, ${so.peak_day.kwh} kWh.</p>`]);
-  if (d.devices) s.push(["g7", `<div class="kicker">Biggest energy users</div><div class="big">${fmt(Math.round(d.devices.top[0].kwh))}</div><h2>kWh: ${esc(d.devices.top[0].name)}</h2>${cap('devices', '<p>Your top devices:</p>')}${list(d.devices.top, "kWh", "kwh")}`]);
-  if (e.standby_w) s.push(["g8", `<div class="kicker">Always on</div><div class="big">${fmt(e.standby_w)} W</div><h2>your home's overnight standby power</h2>${cap('standby', fact(e.standby_fact))}${d.always_on?`<p>Most constant draw: <b>${esc(d.always_on.name)}</b> at ${d.always_on.avg_w} W on average.</p>`:""}`]);
-  if (d.screen_time) s.push(["g6", `<div class="kicker">Screen time</div><div class="big">${fmt(d.screen_time.top[0].hours)}</div><h2>hours: ${esc(d.screen_time.top[0].name)}</h2>${cap('screen_time', fact(d.screen_time.fact))}${list(d.screen_time.top, "h", "hours")}`]);
-  if (d.water) s.push(["g9", `<div class="kicker">Water</div><div class="big">${fmt(Math.round(d.water.litres))}</div><h2>litres of water</h2>${cap('water', fact(d.water.fact))}${d.water.peak_day?`<p>Thirstiest day: ${date(d.water.peak_day.date)} (${fmt(Math.round(d.water.peak_day.value))} L).</p>`:""}`]);
-  if (d.gas) s.push(["g3", `<div class="kicker">Gas</div><div class="big">${fmt(Math.round(d.gas.value))}</div><h2>${d.gas.unit} of gas</h2>${cap('gas', fact(d.gas.fact))}${d.gas.peak_day?`<p>Coldest-feeling day: ${date(d.gas.peak_day.date)}.</p>`:""}`]);
-
-
-  if (d.steps) s.push(["g5", `<div class="kicker">On your feet</div><div class="big">${fmt(d.steps.total)}</div><h2>steps</h2>${cap('steps', fact(d.steps.fact))}${list(d.steps.top, "", "steps")}`]);
-  if (d.distance) s.push(["g4", `<div class="kicker">Distance</div><div class="big">${fmt(Math.round(d.distance.top[0].km))} km</div><h2>${esc(d.distance.top[0].name)}</h2>${cap('distance', '')}${d.distance.top.length>1?list(d.distance.top, "km", "km"):""}`]);
-  if (d.air) s.push(["g5", `<div class="kicker">Air quality</div><h2>Stuffiest room: ${esc(d.air.stuffiest.name)}</h2>${cap('air', `<p>Averaged <b>${fmt(d.air.stuffiest.avg_ppm)} ppm</b> CO₂${d.air.stuffiest.worst?`, peaking at ${fmt(d.air.stuffiest.worst.ppm)} ppm on ${date(d.air.stuffiest.worst.date)}`:""}.</p>`)}${d.air.rooms>1?`<p>Freshest: <b>${esc(d.air.freshest.name)}</b> (${fmt(d.air.freshest.avg_ppm)} ppm).</p>`:""}`]);
-  if (d.rain) s.push(["g9", `<div class="kicker">Rain gauge</div><div class="big">${fmt(Math.round(d.rain.mm))} mm</div><h2>of rain</h2>${cap('rain', d.rain.wettest_day?`<p>Wettest day: ${date(d.rain.wettest_day.date)} (${d.rain.wettest_day.value} mm).</p>`:"")}`]);
-  if (d.batteries) s.push(["g7", `<div class="kicker">Battery life</div><div class="big">${d.batteries.replaced}</div><h2>batteries replaced</h2>${cap('batteries', `<p>Hungriest: <b>${esc(d.batteries.hungriest.name)}</b> (${d.batteries.hungriest.swaps} swaps).</p>`)}`]);
-  const odds = [];
-  if (d.data) odds.push({name: d.data.name, value: Math.round(d.data.gb), unit: "GB"});
-  (d.counters ? d.counters.top : []).forEach(c => odds.push(c));
-  if (odds.length) s.push(["g2", `<div class="kicker">Odds & ends</div><h2>Your home also counted…</h2><ol>${odds.slice(0,5).map(o=>`<li>${esc(o.name)}<small>${fmt(o.value)} ${esc(o.unit||"")}</small></li>`).join("")}</ol>`]);
-
-  const st = d.setup;
-  s.push(["g2", `<div class="kicker">Your smart home grew</div><div class="big">+${st.devices_added}</div><h2>new devices this year</h2>${cap('setup', st.newest_device?`<p>Latest arrival: <b>${esc(st.newest_device)}</b></p>`:"")}<div class="grid2"><div class="card"><b>${fmt(st.devices_total)}</b><span>devices</span></div><div class="card"><b>${fmt(st.entities_total)}</b><span>entities</span></div><div class="card"><b>${st.integrations}</b><span>integrations</span></div><div class="card"><b>${st.automations}</b><span>automations${st.automations_added?` (+${st.automations_added})`:""}</span></div></div>`]);
-  s.push(["g1", `<div class="kicker">That's a wrap</div><h2>${d.year} was a big year for ${esc(d.home_name)}.</h2>${cap('outro', '')}<p>${d.ai ? `Every number was calculated on your own hardware. Captions written by ${esc(d.ai_agent || 'your AI agent')}.` : 'Every number here was calculated on your own hardware. None of it left your home.'}</p><p style="font-size:14px">Tap to watch again.</p>`]);
-  return s;
+// ---------- slides: id -> [gradient, html] ----------
+function slideDefs(d, cap) {
+  const e = d.energy || {}, st = d.setup, cur = (e.cost||{}).currency;
+  return {
+    numbers: () => {
+      const cells = [];
+      if (e.grid) cells.push([fmt(Math.round(e.grid.total_kwh)), "kWh from the grid"]);
+      if (e.solar) cells.push([fmt(Math.round(e.solar.total_kwh)), "kWh of sunshine"]);
+      if (e.cost) cells.push([money(e.cost.spent, cur), "spent on energy"]);
+      if (d.water) cells.push([compact(d.water.litres), "litres of water"]);
+      if (d.steps) cells.push([compact(d.steps.total), "steps"]);
+      cells.push([`+${st.devices_added}`, "new devices"]);
+      return ["g1", `<div class="kicker">${esc(d.home_name)}</div><div class="big">${d.year}</div><h2>Your home's year, wrapped up.</h2>${cap('intro', '')}<div class="grid2">${cells.slice(0,4).map(([v,l])=>`<div class="card"><b>${v}</b><span>${l}</span></div>`).join("")}</div>`];
+    },
+    personality: () => ["g2", `<div class="kicker">Your home personality</div><div class="emoji">${d.persona.emoji}</div><h2>${esc(d.persona.title)}</h2>${cap('personality', `<p>${esc(d.persona.blurb)}</p>`)}${bars(d.hours, d.persona.peak_hour)}${hoursAxis}<p class="small">Average energy use by hour, all year</p>`],
+    aura: () => { const [a,b] = d.aura.colors; return ["g0", `<div class="orb" style="background:${a};width:340px;height:340px;top:12%;left:-60px"></div><div class="orb" style="background:${b};width:300px;height:300px;bottom:8%;right:-60px;animation-delay:-4s"></div><div class="kicker">Your energy aura</div><h2>${esc(d.aura.words[0].toUpperCase()+d.aura.words.slice(1))}</h2>${cap('aura', `<p>Your peak hour sets the first colour, your biggest season the second.</p>`)}`]; },
+    energy: () => ["g3", `<div class="kicker">Energy</div><div class="big">${fmt(Math.round(e.grid.total_kwh))}</div><h2>kWh from the grid</h2>${cap('energy', fact(e.fact))}${bars(e.grid.monthly_kwh, e.grid.monthly_kwh.indexOf(Math.max(...e.grid.monthly_kwh)))}${months}`],
+    top_devices: () => ["g7", `<div class="kicker">Your top energy users</div><div class="big">#1</div><h2>${esc(d.devices.top[0].name)}</h2>${cap('top_devices', `<p><b>${fmt(Math.round(d.devices.top[0].kwh))} kWh</b>, ${Math.round(100*d.devices.top[0].kwh/d.devices.total_kwh)}% of everything you tracked.</p>`)}${list(d.devices.top, "kWh", "kwh")}`],
+    on_repeat: () => ["g6", `<div class="kicker">On repeat</div><div class="big">${d.on_repeat.days_on}</div><h2>days with the ${esc(d.on_repeat.name)}</h2>${cap('on_repeat', `<p>Used on <b>${d.on_repeat.days_on} of ${d.on_repeat.days_tracked}</b> days. A true daily ritual.</p>`)}`],
+    screen_time: () => ["g6", `<div class="kicker">Screen time</div><div class="big">${fmt(d.screen_time.top[0].hours)}</div><h2>hours: ${esc(d.screen_time.top[0].name)}</h2>${cap('screen_time', fact(d.screen_time.fact))}${list(d.screen_time.top, "h", "hours")}`],
+    day_of_year: () => ["g4", `<div class="kicker">The day of the year</div><h2>${date(e.day_of_year.date)}</h2><div class="big">${e.day_of_year.times_normal}×</div>${cap('day_of_year', `<p>Your home used <b>${e.day_of_year.kwh} kWh</b>, ${e.day_of_year.times_normal} times a normal day. What happened?</p>`)}`],
+    season: () => { const s = e.seasons, order = ["Winter","Spring","Summer","Autumn"], ic = {Winter:"❄️",Spring:"🌱",Summer:"☀️",Autumn:"🍂"}; return ["g8", `<div class="kicker">Your season</div><div class="emoji">${ic[s.top]}</div><h2>${s.top} was your season</h2>${(()=>{const lo=order.filter(k=>s.share_pct[k]!=null).reduce((m,k)=>s.share_pct[k]<s.share_pct[m]?k:m, s.top); return cap('season', `<p>A typical ${s.top.toLowerCase()} day used <b>${(s.share_pct[s.top]/s.share_pct[lo]).toFixed(1)}×</b> the energy of a ${lo.toLowerCase()} day.</p>`);})()}<div class="grid2">${order.filter(k=>s.share_pct[k]!=null).map(k=>`<div class="card"><b>${ic[k]} ${s.share_pct[k]}%</b><span>${k}</span></div>`).join("")}</div>`]; },
+    weekdays: () => { const w = e.weekdays; return ["g5", `<div class="kicker">Weekday vs weekend</div><h2>${w.busiest}s were your busiest</h2>${cap('weekdays', `<p>${w.busiest}s used <b>${w.spread_pct}% more</b> than ${w.quietest}s.</p>`)}${bars(w.avg_kwh, w.avg_kwh.indexOf(Math.max(...w.avg_kwh)))}<div class="axis">${["M","T","W","T","F","S","S"].map(x=>`<span>${x}</span>`).join("")}</div>`]; },
+    quiet_hour: () => ["g8", `<div class="kicker">The quiet hour</div><div class="emoji">😴</div><h2>Your home's deep sleep: ${hr(e.quiet_hour.hour)}</h2>${cap('quiet_hour', `<p>At its calmest your home ticks over at about <b>${fmt(e.quiet_hour.watts)} W</b>.</p>`)}`],
+    vampire: () => ["g9", `<div class="kicker">Vampire hunter</div><div class="emoji">🧛</div><div class="big">${fmt(e.standby_w)} W</div><h2>never switched off</h2>${cap('vampire', `${e.standby_cost?`<p>Standby cost about <b>${money(e.standby_cost, cur)}</b> this year.</p>`:""}${fact(e.standby_fact)}`)}${d.always_on?`<p class="small">Most constant draw: ${esc(d.always_on.name)}, ${d.always_on.avg_w} W on average.</p>`:""}`],
+    bill: () => { const c = e.cost; return ["g3", `<div class="kicker">The bill</div><div class="big">${money(c.spent, cur)}</div><h2>spent on electricity</h2>${cap('bill', `<p>About <b>${money(c.per_day*1, cur)}</b> a day${c.earned?`, and you earned <b>${money(c.earned, cur)}</b> back from export`:""}.</p>`)}<div class="grid2"><div class="card"><b>${money(c.cheapest.value, cur)}</b><span>cheapest: ${c.cheapest.month}</span></div><div class="card"><b>${money(c.dearest.value, cur)}</b><span>dearest: ${c.dearest.month}</span></div></div>`]; },
+    solar: () => ["g4", `<div class="kicker">Sunshine</div><div class="big">${fmt(Math.round(e.solar.total_kwh))}</div><h2>kWh made by your panels</h2>${cap('solar', fact(e.solar_fact))}<div class="grid2">${e.self_powered_pct!=null?`<div class="card"><b>${e.self_powered_pct}%</b><span>of your power was your own</span></div>`:""}${e.export_kwh?`<div class="card"><b>${fmt(Math.round(e.export_kwh))}</b><span>kWh shared with the grid</span></div>`:""}</div>`],
+    sun_streak: () => ["g4", `<div class="kicker">Sun streak</div><div class="emoji">🔥</div><div class="big">${e.sun_streak.days}</div><h2>days in a row the sun out-powered the grid</h2>${cap('sun_streak', `<p>${short(e.sun_streak.from)} to ${short(e.sun_streak.to)}. <b>${e.sun_streak.total_days}</b> sun-powered days all year.</p>`)}`],
+    home_battery: () => ["g5", `<div class="kicker">Home battery</div><div class="big">${fmt(Math.round(e.battery.discharged_kwh))}</div><h2>kWh time-shifted by your battery</h2>${cap('home_battery', e.battery.efficiency_pct?`<p>Round-trip efficiency: <b>${e.battery.efficiency_pct}%</b>.</p>`:"")}`],
+    glow_up: () => { const ly = d.last_year; return ["g5", `<div class="kicker">Glow-up</div><h2>Compared with last year</h2><div class="grid2"><div class="card"><b>${pct(ly.grid_change_pct, false)}</b><span>grid energy</span></div>${ly.solar_change_pct!=null?`<div class="card"><b>${pct(ly.solar_change_pct, true)}</b><span>solar</span></div>`:""}</div>${cap('glow_up', `<p>${ly.grid_change_pct<0?`You used <b>${fmt(Math.round(ly.grid_kwh - e.grid.total_kwh))} kWh less</b> than last year.`:`You used <b>${fmt(Math.round(e.grid.total_kwh - ly.grid_kwh))} kWh more</b> than last year.`}</p>`)}`]; },
+    water: () => ["g9", `<div class="kicker">Water</div><div class="big">${fmt(Math.round(d.water.litres))}</div><h2>litres of water</h2>${cap('water', fact(d.water.fact))}${d.water.peak_hour!=null?`<p>Taps were busiest around <b>${hr(d.water.peak_hour)}</b>${d.water.peak_day?`; thirstiest day ${short(d.water.peak_day.date)}`:""}.</p>`:""}`],
+    gas: () => ["g3", `<div class="kicker">Gas</div><div class="big">${fmt(Math.round(d.gas.value))}</div><h2>${d.gas.unit} of gas</h2>${cap('gas', fact(d.gas.fact))}${d.gas.peak_day?`<p>Coldest-feeling day: ${date(d.gas.peak_day.date)}.</p>`:""}`],
+    air: () => ["g5", `<div class="kicker">Breathe easy</div><h2>Stuffiest room: ${esc(d.air.stuffiest.name)}</h2>${cap('air', `<p><b>${fmt(d.air.stuffiest.hours_over_1000)} hours</b> above 1,000 ppm CO₂${d.air.stuffiest.worst?`, peaking at ${fmt(d.air.stuffiest.worst.ppm)} ppm on ${short(d.air.stuffiest.worst.date)}`:""}. Open a window!</p>`)}${d.air.rooms>1?`<p>Freshest: <b>${esc(d.air.freshest.name)}</b> (${fmt(d.air.freshest.avg_ppm)} ppm on average).</p>`:""}`],
+    out_and_about: () => ["g5", `<div class="kicker">Out and about</div>${d.steps?`<div class="big">${compact(d.steps.total)}</div><h2>steps</h2>${cap('out_and_about', fact(d.steps.fact))}`:"<h2>Miles covered</h2>"}${d.distance?list(d.distance.top, "km", "km"):""}`],
+    rain: () => ["g9", `<div class="kicker">Rain gauge</div><div class="big">${fmt(Math.round(d.rain.mm))} mm</div><h2>of rain</h2>${cap('rain', d.rain.wettest_day?`<p>Wettest day: ${date(d.rain.wettest_day.date)} (${d.rain.wettest_day.value} mm).</p>`:"")}`],
+    battery_graveyard: () => ["g7", `<div class="kicker">Battery graveyard</div><div class="emoji">🪦</div><div class="big">${d.batteries.replaced}</div><h2>batteries replaced</h2>${cap('battery_graveyard', `<p>Hungriest: <b>${esc(d.batteries.hungriest.name)}</b> (${d.batteries.hungriest.swaps} swaps).</p>`)}`],
+    odds: () => { const o = []; if (d.data) o.push({name:d.data.name, value:d.data.gb, unit:"GB"}); (d.counters?d.counters.top:[]).forEach(c=>o.push(c)); return ["g2", `<div class="kicker">Odds & ends</div><h2>Your home also counted…</h2><ol>${o.slice(0,5).map(x=>`<li>${esc(x.name)}<small>${fmt(Math.round(x.value))} ${esc(x.unit||"")}</small></li>`).join("")}</ol>`]; },
+    new_arrivals: () => ["g2", `<div class="kicker">New arrivals</div><div class="big">+${st.devices_added}</div><h2>devices joined this year</h2>${cap('new_arrivals', st.newest_device?`<p>First in: <b>${esc(st.first_device)}</b>. Latest: <b>${esc(st.newest_device)}</b>.</p>`:"")}<div class="grid2"><div class="card"><b>${fmt(st.devices_total)}</b><span>devices</span></div><div class="card"><b>${st.automations}</b><span>automations${st.automations_added?` (+${st.automations_added})`:""}</span></div></div>`],
+    share: () => ["g1", `<div class="kicker">That's a wrap</div>${cap('outro', '')}<canvas class="share" id="sharecard" width="1080" height="1350"></canvas><button class="btn" id="dl">Save image</button><p class="small">${d.ai ? `Numbers calculated on your own hardware. Captions by ${esc(d.ai_agent || 'your AI agent')}.` : 'Every number was calculated on your own hardware. None of it left your home.'}</p>`],
+  };
 }
 
+// ---------- share card (plain canvas, no libraries) ----------
+function drawShare(d) {
+  const c = document.getElementById("sharecard"); if (!c) return;
+  const x = c.getContext("2d"), W = c.width, H = c.height, e = d.energy || {};
+  const cols = d.aura ? d.aura.colors : ["#03a9f4", "#1a237e"];
+  const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]);
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(0, 0, W, H);
+  x.fillStyle = "#fff"; x.textBaseline = "top";
+  x.font = "600 40px system-ui, sans-serif"; x.globalAlpha = .8; x.fillText((d.home_name||"").toUpperCase() + " · YEAR ROUNDUP", 80, 80); x.globalAlpha = 1;
+  x.font = "800 200px system-ui, sans-serif"; x.fillText(String(d.year), 72, 140);
+  if (d.persona) { x.font = "100px system-ui, sans-serif"; x.fillText(d.persona.emoji, 80, 380); x.font = "800 64px system-ui, sans-serif"; x.fillText(d.persona.title, 210, 400); }
+  const stats = [];
+  if (e.grid) stats.push([fmt(Math.round(e.grid.total_kwh)), "kWh from the grid"]);
+  if (e.solar) stats.push([fmt(Math.round(e.solar.total_kwh)), "kWh of sunshine"]);
+  if (d.devices) stats.push([d.devices.top[0].name, "#1 energy user"]);
+  if (e.cost) stats.push([money(e.cost.spent, e.cost.currency), "spent on energy"]);
+  if (d.water) stats.push([fmt(Math.round(d.water.litres)) + " L", "of water"]);
+  stats.push(["+" + d.setup.devices_added, "new devices"]);
+  stats.slice(0, 6).forEach(([v, l], i) => {
+    const cx = 80 + (i % 2) * 470, cy = 560 + Math.floor(i / 2) * 230;
+    x.fillStyle = "rgba(255,255,255,.14)"; x.beginPath(); x.roundRect(cx, cy, 440, 200, 28); x.fill();
+    x.fillStyle = "#fff"; x.font = "800 64px system-ui, sans-serif";
+    let t = String(v); while (x.measureText(t).width > 390 && t.length > 4) t = t.slice(0, -2) + "…";
+    x.fillText(t, cx + 30, cy + 36);
+    x.globalAlpha = .8; x.font = "500 34px system-ui, sans-serif"; x.fillText(l, cx + 30, cy + 124); x.globalAlpha = 1;
+  });
+  x.globalAlpha = .7; x.font = "500 30px system-ui, sans-serif"; x.fillText("Made with Home Assistant", 80, H - 80); x.globalAlpha = 1;
+}
+
+// ---------- player ----------
 let slides = [], idx = 0, timer;
 const DUR = 7000;
 function show(i) {
   idx = (i + slides.length) % slides.length;
-  document.querySelectorAll(".slide").forEach((el, j) => { el.classList.toggle("active", j === idx); });
+  document.querySelectorAll(".slide").forEach((el, j) => el.classList.toggle("active", j === idx));
   document.querySelectorAll(".bars span").forEach((el, j) => { el.className = j < idx ? "done" : j === idx ? "now" : ""; el.innerHTML = "<i></i>"; });
   clearTimeout(timer);
   if (idx < slides.length - 1) timer = setTimeout(() => show(idx + 1), DUR);
 }
 function render(d, preview) {
-  slides = build(d);
+  const ai = d.ai || {};
+  const cap = (key, html) => ai[key] ? `<p>${esc(ai[key])}</p>` : html;
+  const defs = slideDefs(d, cap);
+  const order = d.slides || Object.keys(defs);
+  slides = [];
+  for (const id of order) {
+    if (!defs[id]) continue;
+    try { slides.push(defs[id]()); } catch (err) { console.warn("Skipping slide", id, err); }
+  }
   document.getElementById("slides").innerHTML = slides.map(([g, h]) => `<section class="slide ${g}">${h}</section>`).join("") + (preview ? '<div class="preview">Preview data</div>' : "");
   document.getElementById("bars").innerHTML = slides.map(() => "<span><i></i></span>").join("");
   document.documentElement.style.setProperty("--dur", DUR + "ms");
-  const start = Number(new URLSearchParams(location.search).get("slide") || 0);
-  show(start);
+  drawShare(d);
+  const dl = document.getElementById("dl");
+  if (dl) dl.addEventListener("click", ev => {
+    ev.stopPropagation();
+    const a = document.createElement("a");
+    a.download = `home-roundup-${d.year}.png`;
+    a.href = document.getElementById("sharecard").toDataURL("image/png");
+    a.click();
+  });
+  show(Number(new URLSearchParams(location.search).get("slide") || 0));
 }
 document.getElementById("stage").addEventListener("click", e => show(e.clientX < innerWidth / 3 ? idx - 1 : idx + 1));
 addEventListener("keydown", e => { if (e.key === "ArrowRight") show(idx + 1); if (e.key === "ArrowLeft") show(idx - 1); });
 
 (async () => {
+  const q = new URLSearchParams(location.search);
   let hass;
   try { hass = window.parent.document.querySelector("home-assistant").hass; } catch (_) {}
-  const q = new URLSearchParams(location.search);
   if (!hass) return render(q.get("ai") ? { ...SAMPLE, ...SAMPLE_AI } : SAMPLE, true);
-  const year = Number(new URLSearchParams(location.search).get("year")) || undefined;
-  try { render(await hass.callWS({ type: "year_roundup/get", refresh: q.has("refresh"), ...(year && { year }) }), false); }
-  catch (err) { console.error(err); render(SAMPLE, true); }
+  const year = Number(q.get("year")) || undefined;
+  try {
+    render(await hass.callWS({ type: "year_roundup/get", refresh: q.has("refresh"), all: q.has("all"), ...(year && { year }) }), false);
+  } catch (err) {
+    console.error(err);
+    document.getElementById("slides").innerHTML = `<section class="slide g7 active"><div class="kicker">Year Roundup</div><h2>Something went wrong</h2><p>${esc(err.message || err)}</p><p class="small">Check Settings → System → Logs for "year_roundup".</p></section>`;
+  }
 })();
 </script>
 </body>

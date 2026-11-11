@@ -109,7 +109,11 @@ def _classify(hass: HomeAssistant, metas: list[dict], exclude: set[str]) -> dict
             groups["distance"].append(meta)
         elif unit in _DATA_TO_GB and has_sum:
             groups["data"].append(meta)
-        elif has_sum and not uclass and unit not in ("%",):
+        elif (
+            has_sum and not uclass and unit not in ("%",)
+            and dc != "monetary" and unit != hass.config.currency
+            and not sid.endswith(("_cost", "_compensation"))
+        ):
             groups["counter"].append(meta)
     return groups
 
@@ -172,9 +176,18 @@ async def async_read_lts(hass: HomeAssistant, start, end, prefs: dict) -> dict[s
         peak = max(series.items(), key=lambda kv: kv[1]) if series else None
         return {"total": round(value, 1), "peak_day": {"date": peak[0], "value": round(peak[1], 1)} if peak else None}
 
-    water = await biggest(water_pref or [m["statistic_id"] for m in groups["water"]], {"volume": "L"})
+    water_ids = water_pref or [m["statistic_id"] for m in groups["water"]]
+    water = await biggest(water_ids, {"volume": "L"})
     if water:
         out["water"] = {"litres": water["total"], "peak_day": water["peak_day"]}
+        hourly = await _query(hass, start, end, water_ids, "hour", {"change"}, {"volume": "L"})
+        by_hour = [0.0] * 24
+        for series in hourly.values():
+            for r in series:
+                if r.get("change"):
+                    by_hour[dt_util.as_local(dt_util.utc_from_timestamp(r["start"])).hour] += r["change"]
+        if any(by_hour):
+            out["water"]["peak_hour"] = max(range(24), key=by_hour.__getitem__)
     gas = await biggest(gas_pref or [m["statistic_id"] for m in groups["gas"]], {"volume": "m³", "energy": "kWh"})
     if gas:
         gas_id = (gas_pref or [m["statistic_id"] for m in groups["gas"]])[0]
@@ -195,14 +208,25 @@ async def async_read_lts(hass: HomeAssistant, start, end, prefs: dict) -> dict[s
             means = [r["mean"] for r in series if r.get("mean") is not None]
             if not means or max(means) > POWER_MAX_DEVICE_W:
                 continue
-            hours = sum(1 for m in means if m > POWER_ON_W)
+            on_rows = [r for r in series if r.get("mean") is not None and r["mean"] > POWER_ON_W]
+            hours = len(on_rows)
             if hours:
-                on.append({"name": names.name(sid, by_id[sid]), "hours": hours, "avg_w": round(pystats.fmean(means), 1)})
+                on.append({
+                    "name": names.name(sid, by_id[sid]), "hours": hours,
+                    "avg_w": round(pystats.fmean(means), 1),
+                    "days_on": len({_day(r["start"]) for r in on_rows}),
+                    "days_tracked": len({_day(r["start"]) for r in series}),
+                    "on_share": hours / len(means),
+                })
         on.sort(key=lambda d: d["hours"], reverse=True)
         if on:
             out["screen_time"] = {"top": on[:5]}
-            always_on = max(on, key=lambda d: d["avg_w"])
-            out["always_on"] = always_on
+            out["always_on"] = max(on, key=lambda d: d["avg_w"])
+            # "On repeat": used on the most days, but not something that's always on
+            used = [d for d in on if d["on_share"] < 0.5 and d["days_tracked"] >= 28]
+            if used:
+                fav = max(used, key=lambda d: (d["days_on"], d["hours"]))
+                out["on_repeat"] = {k: fav[k] for k in ("name", "days_on", "days_tracked", "hours")}
 
     # --- Batteries replaced (big daily jump on non-rechargeable devices) ---
     batt_ids = [m["statistic_id"] for m in groups["battery"] if names.platform(m["statistic_id"]) != "mobile_app"]
@@ -230,16 +254,17 @@ async def async_read_lts(hass: HomeAssistant, start, end, prefs: dict) -> dict[s
     # --- Air quality (CO2) ---
     co2_ids = [m["statistic_id"] for m in groups["co2"]]
     if co2_ids:
-        rows = await _query(hass, start, end, co2_ids, "day", {"mean", "max"})
+        rows = await _query(hass, start, end, co2_ids, "hour", {"mean", "max"})
         rooms = []
         for sid, series in rows.items():
             means = [r["mean"] for r in series if r.get("mean") is not None]
-            if len(means) < 7:
+            if len(means) < 24 * 7:
                 continue
             worst = max((r for r in series if r.get("max") is not None), key=lambda r: r["max"], default=None)
             rooms.append({
                 "name": names.area(sid) or names.name(sid, by_id[sid]),
                 "avg_ppm": round(pystats.fmean(means)),
+                "hours_over_1000": sum(1 for m in means if m > 1000),
                 "worst": {"date": _day(worst["start"]), "ppm": round(worst["max"])} if worst else None,
             })
         if rooms:
@@ -300,5 +325,4 @@ async def async_read_lts(hass: HomeAssistant, start, end, prefs: dict) -> dict[s
         if items:
             out["counters"] = {"top": items[:5]}
 
-    # When do long-term statistics start?
     return out

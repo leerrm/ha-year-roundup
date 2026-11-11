@@ -20,27 +20,37 @@ MAX_LEN = 300
 # slide key -> what the caption should cover
 SLIDES: dict[str, str] = {
     "intro": "Opening line welcoming the household to their year in review.",
-    "persona": "One or two sentences explaining the home's energy personality and peak hour.",
+    "numbers": "One line summing up the year's headline numbers.",
+    "personality": "Explain the home's energy personality in a fun way.",
+    "aura": "Describe the home's energy aura colours poetically.",
     "energy": "Comment on grid energy use, the monthly trend and the peak day.",
-    "solar": "Comment on solar production and the best day.",
-    "devices": "Comment on the biggest energy-using devices.",
-    "standby": "Comment on overnight standby power and the most constant device.",
+    "top_devices": "Comment on the biggest energy-using devices.",
+    "on_repeat": "Comment on the device used on the most days.",
     "screen_time": "Comment on which devices were switched on the most hours.",
-    "water": "Comment on water use and the thirstiest day.",
+    "day_of_year": "Guess playfully what happened on the most unusual day.",
+    "season": "Comment on which season used the most energy.",
+    "weekdays": "Comment on the busiest and quietest day of the week.",
+    "quiet_hour": "Comment on the home's quietest hour.",
+    "vampire": "Comment on standby power and what it cost.",
+    "bill": "Comment on what energy cost this year and the cheapest/dearest month.",
+    "solar": "Comment on solar production, export and self-sufficiency.",
+    "sun_streak": "Celebrate the longest run of days solar beat the grid.",
+    "home_battery": "Comment on the home battery's year.",
+    "glow_up": "Comment on the change versus last year.",
+    "water": "Comment on water use, the thirstiest day and peak hour.",
     "gas": "Comment on gas use.",
-    "steps": "Comment on steps walked.",
-    "distance": "Comment on distances covered (car, vacuum, mower...).",
     "air": "Comment on the stuffiest and freshest rooms by CO2.",
+    "out_and_about": "Comment on steps walked and distances covered.",
     "rain": "Comment on rainfall and the wettest day.",
-    "batteries": "Comment on batteries replaced and the hungriest device.",
-    "setup": "Comment on devices added and how the setup grew.",
+    "battery_graveyard": "Comment on batteries replaced and the hungriest device.",
+    "new_arrivals": "Comment on new devices and automations added this year.",
     "outro": "Closing line wrapping up the year.",
 }
 
 
 def _facts(roundup: dict[str, Any]) -> dict[str, Any]:
     """Strip the roundup down to what the model needs."""
-    skip = {"hours", "tracking_since", "ai", "ai_agent"}
+    skip = {"hours", "ai", "ai_agent"}
     facts = {k: v for k, v in roundup.items() if k not in skip and v}
     if (energy := facts.get("energy")) and (grid := energy.get("grid")):
         grid = dict(grid)

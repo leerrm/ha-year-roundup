@@ -96,6 +96,7 @@ async def _async_captions(
         vol.Required("type"): f"{DOMAIN}/get",
         vol.Optional("year"): int,
         vol.Optional("refresh", default=False): bool,
+        vol.Optional("all", default=False): bool,
     }
 )
 @websocket_api.async_response
@@ -106,7 +107,7 @@ async def ws_get_roundup(hass: HomeAssistant, connection, msg: dict) -> None:
         connection.send_error(msg["id"], "not_loaded", "Year Roundup is not set up")
         return
     year = msg.get("year") or dt_util.now().year
-    roundup = await async_build_roundup(hass, year)
+    roundup = await async_build_roundup(hass, year, msg["all"])
     roundup["ai"] = await _async_captions(hass, entries[0], store, roundup, msg["refresh"])
     if roundup["ai"] and (state := hass.states.get(entries[0].options[CONF_AI_ENTITY])):
         roundup["ai_agent"] = state.name

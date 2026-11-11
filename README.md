@@ -10,14 +10,23 @@ Only data that covers the **whole year** is used: Home Assistant's long-term sta
 
 | Slide | Source |
 |---|---|
-| Energy, solar, export, % self-powered, standby, energy-by-hour personality | Energy dashboard + long-term statistics |
-| Biggest energy users | Energy dashboard "individual devices" |
-| Screen time (hours each device was on) | Power (W) sensors, hourly means |
+| Year in numbers, energy, solar, export, % self-powered | Energy dashboard + long-term statistics |
+| Personality (8 types) and energy aura | All-year energy by hour, weekday, season, solar share, standby |
+| Day of the year, your season, weekday vs weekend, quiet hour | Hourly grid statistics |
+| Vampire hunter, the bill | Overnight standby load, Energy dashboard cost statistics |
+| Sun streak, home battery | Solar vs grid by day, battery charge/discharge |
+| Glow-up | Same dates last year |
+| Top energy users | Energy dashboard individual devices |
+| On repeat, screen time | Power (W) sensors, hourly means |
 | Water, gas | Energy dashboard or water/gas meters |
-| Batteries replaced | Battery % sensors (big upward jumps) |
-| Air quality | CO2 sensors |
-| Steps, distance, data, other counters | Any statistic by unit (steps, km, GB, pages...) |
-| Devices/automations added | Registries (`created_at`) |
+| Breathe easy | CO2 sensors (hours above 1,000 ppm) |
+| Out and about, rain, odds & ends | Steps, distance, rain, data and other counters |
+| Battery graveyard | Battery % sensors (big upward jumps) |
+| New arrivals | Registries (`created_at`) |
+| Share card | Summary image, downloadable as PNG |
+
+### Which slides are shown
+Year in numbers, personality, top energy users and the share card always appear (when there's data). The rest are scored for how interesting they are (how unusual the number is, records, change vs last year) and the top 10 are shown, at most 2 per category, in story order. Add `?all=1` to the panel URL to see every slide that has data.
 
 ## Optional AI captions
 In the integration options, pick an **AI Task** entity (Ollama, OpenAI, Google, Anthropic…) and write a style prompt ("roast me", "nature documentary narrator", "for kids"…).
@@ -31,7 +40,8 @@ In the integration options, pick an **AI Task** entity (Ollama, OpenAI, Google, 
 - `lts.py`: scans all long-term statistics and turns them into year-long metrics
 - `store.py`: AI caption cache
 - `comparisons.py`: sourced "that's like X bathtubs" comparisons (see COMPARISONS.md)
-- `roundup.py`: builds the roundup (stats queries, top lists, persona, fun facts)
+- `insights.py`: personality, aura, seasons, weekdays, day of the year, sun streak
+- `roundup.py`: builds the roundup, energy/cost/battery/last-year queries, slide scoring and selection
 - `__init__.py`: websocket `year_roundup/get`, sidebar panel, Dec 1 notification
 - `www/index.html`: tap-through story UI (opened on its own, it shows sample data)
 
