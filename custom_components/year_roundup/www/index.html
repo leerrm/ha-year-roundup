@@ -51,43 +51,82 @@
 <body>
 <div id="stage"><div class="bars" id="bars"></div><div id="slides"><section class="slide g1 active"><div class="kicker">Year Roundup</div><h2>Writing your story…</h2><p>Crunching a year of data.</p></section></div><div class="hint">Tap to continue · ← → keys</div></div>
 <script>
-const SAMPLE = {"year":2026,"home_name":"Home","persona":{"title":"The Night Owl","emoji":"🦉","blurb":"Your home was busiest around 22:00.","peak_hour":22},
- "hours":[40,22,10,6,4,8,60,140,120,80,70,75,90,85,80,95,120,160,210,240,260,280,300,150],
- "busiest_day":{"date":"2026-12-24","events":1342},
- "lights":{"total_hours":4210,"top":[{"name":"Living room lamp","value":1820},{"name":"Kitchen spots","value":960},{"name":"Hallway","value":610}],"toggles":18240},
- "doors":{"total":6120,"top":[{"name":"Front door","value":3210},{"name":"Back door","value":1904},{"name":"Fridge","value":1006}]},
- "motion":48210,
- "automations":{"runs":52108,"top":[{"name":"Hallway motion light","value":14021},{"name":"Good morning","value":365},{"name":"Bedtime","value":352}],"hours_saved":144.7},
- "music":{"hours":612,"top_artists":[{"name":"Fleetwood Mac","value":412},{"name":"Daft Punk","value":301},{"name":"Bonobo","value":277}],"top_tracks":[{"name":"Daft Punk — Digital Love","value":58}]},
- "people":{"arrivals":702,"top_zones":[{"name":"Work","value":214},{"name":"Gym","value":96}]},
- "setup":{"devices_total":184,"devices_added":37,"entities_total":1290,"integrations":42,"automations":61,"newest_device":"Voice PE (Kitchen)"},
- "energy":{"grid":{"total_kwh":3412.6,"monthly_kwh":[420,380,330,260,210,180,170,175,220,290,360,417],"peak_day":{"date":"2026-01-14","kwh":24.1}},"solar":{"total_kwh":2840.2,"monthly_kwh":[60,110,220,320,390,420,410,360,270,160,80,40],"peak_day":{"date":"2026-06-21","kwh":21.3}},"kettles":31024,"ev_km":20074}};
+const SAMPLE = {"year":2026,"home_name":"Home",
+ "coverage":{"from":"2026-10-30","days":11,"partial":true,"source":"recorder"},
+ "persona":{"title":"The Homebody","emoji":"🛋️","blurb":"Your home used the most energy around 18:00.","peak_hour":18},
+ "hours":[0.21,0.18,0.16,0.15,0.15,0.17,0.3,0.52,0.48,0.36,0.33,0.34,0.38,0.35,0.33,0.36,0.45,0.6,0.82,0.74,0.66,0.55,0.44,0.3],"hours_source":"energy",
+ "busiest_day":{"date":"2026-11-02","events":512},
+ "lights":{"total_hours":210,"top":[{"name":"Living room lamp","value":64},{"name":"Kitchen spots","value":41},{"name":"Hallway","value":30}],"toggles":940,"fact":"one bulb left on for 9 days"},
+ "doors":{"total":180,"top":[{"name":"Front door","value":96},{"name":"Back door","value":61}],"fact":"17 times a day"},
+ "motion":1210,
+ "automations":{"runs":1608,"top":[{"name":"Hallway motion light","value":641},{"name":"Good morning","value":11}],"hours_saved":4.5,"fact":"2.2 films' worth of time saved"},
+ "music":{"hours":18,"top_artists":[{"name":"Fleetwood Mac","value":41},{"name":"Bonobo","value":27}],"top_tracks":[{"name":"Bonobo — Kerala","value":6}],"fact":"about 280 songs"},
+ "people":{"arrivals":22,"top_zones":[]},
+ "setup":{"devices_total":184,"devices_added":37,"entities_total":1290,"integrations":42,"automations":61,"automations_added":14,"newest_device":"Voice PE (Kitchen)"},
+ "energy":{"grid":{"total_kwh":3412.6,"monthly_kwh":[420,380,330,260,210,180,170,175,220,290,360,417],"peak_day":{"date":"2026-01-14","kwh":24.1}},"solar":{"total_kwh":2840.2,"monthly_kwh":[60,110,220,320,390,420,410,360,270,160,80,40],"peak_day":{"date":"2026-06-21","kwh":21.3}},"export_kwh":910,"self_powered_pct":38,"standby_w":140,"fact":"enough to drive an EV 9,800 miles","solar_fact":"enough to drive an EV from Land's End to John o' Groats 9.4 times","standby_fact":"like leaving 18 LED bulbs on all year"},
+ "devices":{"top":[{"name":"Heat pump","kwh":1840},{"name":"EV charger","kwh":1210},{"name":"Tumble dryer","kwh":310},{"name":"Fridge freezer","kwh":240}],"total_kwh":3700},
+ "screen_time":{"top":[{"name":"Living room TV","hours":1260,"avg_w":38},{"name":"Gaming PC","hours":640,"avg_w":61},{"name":"Coffee machine","hours":210,"avg_w":12}],"fact":"14% of the whole year"},
+ "always_on":{"name":"Network rack","hours":8760,"avg_w":42},
+ "water":{"litres":148000,"peak_day":{"date":"2026-07-19","value":1220},"fact":"enough to fill 1,900 baths"},
+ "batteries":{"replaced":9,"hungriest":{"name":"Front door lock","swaps":3},"top":[]},
+ "air":{"stuffiest":{"name":"Bedroom","avg_ppm":980,"worst":{"date":"2026-02-11","ppm":2210}},"freshest":{"name":"Kitchen","avg_ppm":610},"rooms":4},
+ "steps":{"total":2410000,"top":[{"name":"Sam's phone steps","steps":1380000},{"name":"Alex's phone steps","steps":1030000}],"fact":"46 marathons around the house"},
+ "distance":{"top":[{"name":"Car odometer","km":11240},{"name":"Robot vacuum","km":96}]},
+ "data":{"name":"Router download","gb":4820},
+ "counters":{"top":[{"name":"Printer pages","value":1320,"unit":"pages"}]},
+ "rain":{"mm":742,"wettest_day":{"date":"2026-10-03","value":41}}};
 
-const SAMPLE_AI = {ai_agent:"Local Ollama", ai:{intro:"Grab a cuppa. Your house has been keeping notes all year, and frankly, it has opinions.",persona:"Peak activity at 22:00. Your home sleeps when you do, which is to say: barely.",energy:"3,413 kWh, mostly in January. That 24.1 kWh day on the 14th? The heating remembers.",automations:"52,108 runs. The hallway motion light did 14,021 of them. Give it a raise.",music:"612 hours, and Fleetwood Mac took 412 plays. Go your own way, but apparently not far from 'Dreams'.",outro:"Same time next year? The kettle's already on."}};
+const SAMPLE_AI = {ai_agent:"Local Ollama", ai:{intro:"Grab a cuppa. Your house has been keeping notes all year, and frankly, it has opinions.",energy:"3,413 kWh, mostly in January. That 24.1 kWh day on the 14th? The heating remembers.",devices:"The heat pump ate 1,840 kWh. Worth every cosy minute.",outro:"Same time next year? The kettle's already on."}};
 const fmt = n => Number(n).toLocaleString();
 const date = d => new Date(d + "T12:00").toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+const short = d => new Date(d + "T12:00").toLocaleDateString(undefined, { day:"numeric", month:"short" });
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const list = (items, unit) => `<ol>${items.map(i => `<li>${esc(i.name)}<small>${fmt(i.value)} ${unit}</small></li>`).join("")}</ol>`;
+const list = (items, unit, key="value") => `<ol>${items.map(i => `<li>${esc(i.name)}<small>${fmt(i[key])} ${unit}</small></li>`).join("")}</ol>`;
 const bars = (vals, hiIdx) => { const m = Math.max(...vals, 1); return `<div class="chart">${vals.map((v,i)=>`<div class="${i===hiIdx?"hi":""}" style="height:${v/m*100}%"></div>`).join("")}</div>`; };
+const fact = f => f ? `<p>That's <b>${esc(f)}</b>.</p>` : "";
 
 function build(d) {
   const s = [];
   const ai = d.ai || {};
   const cap = (key, html) => ai[key] ? `<p>${esc(ai[key])}</p>` : html;
+  const cov = d.coverage || {};
+  // Activity slides come from recorder history / own counters; label them when they don't cover the year
+  const since = cov.partial ? ` · since ${short(cov.from)}` : "";
+  const months = '<div class="axis"><span>Jan</span><span>Jun</span><span>Dec</span></div>';
+
   s.push(["g1", `<div class="kicker">${esc(d.home_name)}</div><div class="big">${d.year}</div><h2>Your home's year, wrapped up.</h2>${cap('intro', '<p>Here\'s what happened under your roof.</p>')}`]);
+
   const peak = d.persona.peak_hour;
-  s.push(["g2", `<div class="kicker">Your home personality</div><div class="emoji">${d.persona.emoji}</div><h2>${esc(d.persona.title)}</h2>${cap('persona', `<p>${esc(d.persona.blurb)}</p>`)}${d.hours.some(x=>x)?bars(d.hours, peak)+'<div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>':""}${d.busiest_day?`<p>Busiest day: <b>${date(d.busiest_day.date)}</b> with ${fmt(d.busiest_day.events)} events.</p>`:""}`]);
-  const g = d.energy && d.energy.grid;
-  if (g) s.push(["g3", `<div class="kicker">Energy</div><div class="big">${fmt(Math.round(g.total_kwh))}</div><h2>kWh from the grid</h2>${cap('energy', `<p>Enough to boil <b>${fmt(d.energy.kettles)}</b> kettles or drive an EV <b>${fmt(d.energy.ev_km)} km</b>.</p>`)}${bars(g.monthly_kwh, g.monthly_kwh.indexOf(Math.max(...g.monthly_kwh)))}<div class="axis"><span>Jan</span><span>Jun</span><span>Dec</span></div><p>Hungriest day: ${date(g.peak_day.date)} (${g.peak_day.kwh} kWh).</p>`]);
-  const so = d.energy && d.energy.solar;
-  if (so) s.push(["g4", `<div class="kicker">Sunshine</div><div class="emoji">☀️</div><div class="big">${fmt(Math.round(so.total_kwh))}</div><h2>kWh made by your panels</h2>${cap('solar', `<p>Best day: ${date(so.peak_day.date)}, ${so.peak_day.kwh} kWh.</p>`)}`]);
-  if (d.lights.total_hours) s.push(["g8", `<div class="kicker">Lights</div><div class="big">${fmt(d.lights.total_hours)}</div><h2>hours of light</h2>${cap('lights', `<p>Flipped ${fmt(d.lights.toggles)} times. The brightest stars:</p>`)}${list(d.lights.top, "h")}`]);
-  if (d.doors.total) s.push(["g5", `<div class="kicker">Comings & goings</div><div class="big">${fmt(d.doors.total)}</div><h2>doors opened</h2>${cap('doors', `<p>That's ${Math.round(d.doors.total/365)} a day.</p>`)}${list(d.doors.top, "×")}`]);
-  if (d.automations.runs) s.push(["g9", `<div class="kicker">Automations</div><div class="big">${fmt(d.automations.runs)}</div><h2>times your home did it for you</h2>${cap('automations', `<p>Roughly <b>${d.automations.hours_saved} hours</b> you didn't spend reaching for a switch.</p>`)}${list(d.automations.top, "runs")}`]);
-  if (d.music.top_artists.length) s.push(["g6", `<div class="kicker">Soundtrack</div><div class="big">${fmt(d.music.hours)}</div><h2>hours of music</h2>${cap('music', '<p>Your top artists:</p>')}${list(d.music.top_artists, "plays")}${d.music.top_tracks[0]?`<p>On repeat: <b>${esc(d.music.top_tracks[0].name)}</b></p>`:""}`]);
+  s.push(["g2", `<div class="kicker">Your home personality</div><div class="emoji">${d.persona.emoji}</div><h2>${esc(d.persona.title)}</h2>${cap('persona', `<p>${esc(d.persona.blurb)}</p>`)}${d.hours.some(x=>x)?bars(d.hours, peak)+`<div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div><p style="font-size:13px">${d.hours_source==="energy"?"Average energy use by hour, all year":"Activity by hour"+since}</p>`:""}`]);
+
+  const e = d.energy || {}, g = e.grid;
+  if (g) s.push(["g3", `<div class="kicker">Energy</div><div class="big">${fmt(Math.round(g.total_kwh))}</div><h2>kWh from the grid</h2>${cap('energy', fact(e.fact))}${bars(g.monthly_kwh, g.monthly_kwh.indexOf(Math.max(...g.monthly_kwh)))}${months}<p>Hungriest day: ${date(g.peak_day.date)} (${g.peak_day.kwh} kWh).</p>`]);
+  const so = e.solar;
+  if (so) s.push(["g4", `<div class="kicker">Sunshine</div><div class="big">${fmt(Math.round(so.total_kwh))}</div><h2>kWh made by your panels</h2>${cap('solar', fact(e.solar_fact))}<div class="grid2">${e.self_powered_pct!=null?`<div class="card"><b>${e.self_powered_pct}%</b><span>of your power was your own</span></div>`:""}${e.export_kwh?`<div class="card"><b>${fmt(Math.round(e.export_kwh))}</b><span>kWh sent to the grid</span></div>`:""}</div><p>Best day: ${date(so.peak_day.date)}, ${so.peak_day.kwh} kWh.</p>`]);
+  if (d.devices) s.push(["g7", `<div class="kicker">Biggest energy users</div><div class="big">${fmt(Math.round(d.devices.top[0].kwh))}</div><h2>kWh: ${esc(d.devices.top[0].name)}</h2>${cap('devices', '<p>Your top devices:</p>')}${list(d.devices.top, "kWh", "kwh")}`]);
+  if (e.standby_w) s.push(["g8", `<div class="kicker">Always on</div><div class="big">${fmt(e.standby_w)} W</div><h2>your home's overnight standby power</h2>${cap('standby', fact(e.standby_fact))}${d.always_on?`<p>Most constant draw: <b>${esc(d.always_on.name)}</b> at ${d.always_on.avg_w} W on average.</p>`:""}`]);
+  if (d.screen_time) s.push(["g6", `<div class="kicker">Screen time</div><div class="big">${fmt(d.screen_time.top[0].hours)}</div><h2>hours: ${esc(d.screen_time.top[0].name)}</h2>${cap('screen_time', fact(d.screen_time.fact))}${list(d.screen_time.top, "h", "hours")}`]);
+  if (d.water) s.push(["g9", `<div class="kicker">Water</div><div class="big">${fmt(Math.round(d.water.litres))}</div><h2>litres of water</h2>${cap('water', fact(d.water.fact))}${d.water.peak_day?`<p>Thirstiest day: ${date(d.water.peak_day.date)} (${fmt(Math.round(d.water.peak_day.value))} L).</p>`:""}`]);
+  if (d.gas) s.push(["g3", `<div class="kicker">Gas</div><div class="big">${fmt(Math.round(d.gas.value))}</div><h2>${d.gas.unit} of gas</h2>${cap('gas', fact(d.gas.fact))}${d.gas.peak_day?`<p>Coldest-feeling day: ${date(d.gas.peak_day.date)}.</p>`:""}`]);
+
+  if (d.lights.total_hours) s.push(["g8", `<div class="kicker">Lights${since}</div><div class="big">${fmt(d.lights.total_hours)}</div><h2>hours of light</h2>${cap('lights', fact(d.lights.fact))}${list(d.lights.top, "h")}`]);
+  if (d.doors.total) s.push(["g5", `<div class="kicker">Comings & goings${since}</div><div class="big">${fmt(d.doors.total)}</div><h2>doors opened</h2>${cap('doors', fact(d.doors.fact))}${list(d.doors.top, "×")}`]);
+  if (d.automations.runs) s.push(["g9", `<div class="kicker">Automations${since}</div><div class="big">${fmt(d.automations.runs)}</div><h2>times your home did it for you</h2>${cap('automations', fact(d.automations.fact))}${list(d.automations.top, "runs")}`]);
+  if (d.music.top_artists.length) s.push(["g6", `<div class="kicker">Soundtrack${since}</div><div class="big">${fmt(d.music.hours)}</div><h2>hours of music</h2>${cap('music', fact(d.music.fact))}${list(d.music.top_artists, "plays")}${d.music.top_tracks[0]?`<p>On repeat: <b>${esc(d.music.top_tracks[0].name)}</b></p>`:""}`]);
+
+  if (d.steps) s.push(["g5", `<div class="kicker">On your feet</div><div class="big">${fmt(d.steps.total)}</div><h2>steps</h2>${cap('steps', fact(d.steps.fact))}${list(d.steps.top, "", "steps")}`]);
+  if (d.distance) s.push(["g4", `<div class="kicker">Distance</div><div class="big">${fmt(Math.round(d.distance.top[0].km))} km</div><h2>${esc(d.distance.top[0].name)}</h2>${cap('distance', '')}${d.distance.top.length>1?list(d.distance.top, "km", "km"):""}`]);
+  if (d.air) s.push(["g5", `<div class="kicker">Air quality</div><h2>Stuffiest room: ${esc(d.air.stuffiest.name)}</h2>${cap('air', `<p>Averaged <b>${fmt(d.air.stuffiest.avg_ppm)} ppm</b> CO₂${d.air.stuffiest.worst?`, peaking at ${fmt(d.air.stuffiest.worst.ppm)} ppm on ${date(d.air.stuffiest.worst.date)}`:""}.</p>`)}${d.air.rooms>1?`<p>Freshest: <b>${esc(d.air.freshest.name)}</b> (${fmt(d.air.freshest.avg_ppm)} ppm).</p>`:""}`]);
+  if (d.rain) s.push(["g9", `<div class="kicker">Rain gauge</div><div class="big">${fmt(Math.round(d.rain.mm))} mm</div><h2>of rain</h2>${cap('rain', d.rain.wettest_day?`<p>Wettest day: ${date(d.rain.wettest_day.date)} (${d.rain.wettest_day.value} mm).</p>`:"")}`]);
+  if (d.batteries) s.push(["g7", `<div class="kicker">Battery life</div><div class="big">${d.batteries.replaced}</div><h2>batteries replaced</h2>${cap('batteries', `<p>Hungriest: <b>${esc(d.batteries.hungriest.name)}</b> (${d.batteries.hungriest.swaps} swaps).</p>`)}`]);
+  const odds = [];
+  if (d.data) odds.push({name: d.data.name, value: Math.round(d.data.gb), unit: "GB"});
+  (d.counters ? d.counters.top : []).forEach(c => odds.push(c));
+  if (odds.length) s.push(["g2", `<div class="kicker">Odds & ends</div><h2>Your home also counted…</h2><ol>${odds.slice(0,5).map(o=>`<li>${esc(o.name)}<small>${fmt(o.value)} ${esc(o.unit||"")}</small></li>`).join("")}</ol>`]);
+
   const st = d.setup;
-  s.push(["g2", `<div class="kicker">Your smart home grew</div><div class="big">+${st.devices_added}</div><h2>new devices this year</h2>${cap('setup', st.newest_device?`<p>Latest arrival: <b>${esc(st.newest_device)}</b></p>`:"")}<div class="grid2"><div class="card"><b>${fmt(st.devices_total)}</b><span>devices</span></div><div class="card"><b>${fmt(st.entities_total)}</b><span>entities</span></div><div class="card"><b>${st.integrations}</b><span>integrations</span></div><div class="card"><b>${st.automations}</b><span>automations</span></div></div>`]);
-  s.push(["g1", `<div class="kicker">That's a wrap</div><h2>${d.year} was a big year for ${esc(d.home_name)}.</h2>${cap('outro', '')}<p>${d.ai ? `Every number was calculated on your own hardware. Captions written by ${esc(d.ai_agent || 'your AI agent')}.` : 'Every number here was calculated on your own hardware. None of it left your home.'}</p><p style="font-size:14px">Tap to watch again.</p>`]);
+  s.push(["g2", `<div class="kicker">Your smart home grew</div><div class="big">+${st.devices_added}</div><h2>new devices this year</h2>${cap('setup', st.newest_device?`<p>Latest arrival: <b>${esc(st.newest_device)}</b></p>`:"")}<div class="grid2"><div class="card"><b>${fmt(st.devices_total)}</b><span>devices</span></div><div class="card"><b>${fmt(st.entities_total)}</b><span>entities</span></div><div class="card"><b>${st.integrations}</b><span>integrations</span></div><div class="card"><b>${st.automations}</b><span>automations${st.automations_added?` (+${st.automations_added})`:""}</span></div></div>`]);
+  s.push(["g1", `<div class="kicker">That's a wrap</div><h2>${d.year} was a big year for ${esc(d.home_name)}.</h2>${cap('outro', '')}<p>${d.ai ? `Every number was calculated on your own hardware. Captions written by ${esc(d.ai_agent || 'your AI agent')}.` : 'Every number here was calculated on your own hardware. None of it left your home.'}</p>${cov.partial?`<p style="font-size:13px">Lights, doors, automations and music cover ${short(cov.from)} onwards. Home Assistant only keeps that detail for ${cov.keep_days||10} days by default; Year Roundup now counts it all year, so next year's roundup is complete.</p>`:""}<p style="font-size:14px">Tap to watch again.</p>`]);
   return s;
 }
 
