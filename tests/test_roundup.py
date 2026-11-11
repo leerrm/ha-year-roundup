@@ -16,7 +16,6 @@ from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 
 from custom_components.year_roundup.const import DOMAIN
-from custom_components.year_roundup.history import async_read_year
 from custom_components.year_roundup.lts import async_read_lts
 
 YEAR = dt_util.now().year
@@ -81,31 +80,12 @@ async def test_long_term_statistics(recorder_mock, hass: HomeAssistant):
     assert out["batteries"]["hungriest"]["name"] == "Front door lock battery"
 
 
-async def test_recorder_history(recorder_mock, hass: HomeAssistant):
-    hass.states.async_set("light.lamp", "off", {"friendly_name": "Lamp"})
-    hass.states.async_set("binary_sensor.front_door", "off", {"device_class": "door"})
-    await hass.async_block_till_done()
-    for _ in range(3):
-        hass.states.async_set("light.lamp", "on")
-        hass.states.async_set("binary_sensor.front_door", "on", {"device_class": "door"})
-        await hass.async_block_till_done()
-        hass.states.async_set("light.lamp", "off")
-        hass.states.async_set("binary_sensor.front_door", "off", {"device_class": "door"})
-        await hass.async_block_till_done()
-    hass.bus.async_fire("automation_triggered", {"name": "Hall light", "entity_id": "automation.hall"})
-    hass.bus.async_fire("automation_triggered", {"name": "Hall light", "entity_id": "automation.hall"})
-    await async_wait_recording_done(hass)
-
-    start = datetime(YEAR, 1, 1, tzinfo=dt_util.get_default_time_zone())
-    out = await async_read_year(hass, start, dt_util.now() + timedelta(minutes=1))
-    assert out["toggles"]["light.lamp"] == 6
-    assert out["door_opens"]["binary_sensor.front_door"] == 3
-    assert out["automations"]["Hall light"] == 2
-    assert out["coverage"]["from"] == dt_util.now().date().isoformat()
-
-
 async def test_websocket_end_to_end(recorder_mock, hass: HomeAssistant, hass_ws_client):
     await _seed_statistics(hass)
+    from homeassistant.components.energy.data import async_get_manager
+
+    manager = await async_get_manager(hass)
+    await manager.async_update(PREFS)
     assert await async_setup_component(hass, "http", {})
     hass.config.components.add("frontend")  # frontend package not installed in tests
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
@@ -123,5 +103,8 @@ async def test_websocket_end_to_end(recorder_mock, hass: HomeAssistant, hass_ws_
     assert r["year"] == YEAR
     assert r["screen_time"]["top"][0]["name"] == "Living room TV"
     assert r["batteries"]["replaced"] == 2
-    assert "climate" not in r
+    assert "climate" not in r and "lights" not in r and "automations" not in r
+    assert r["persona"]["peak_hour"] is not None
+    assert r["energy"]["grid"]["total_kwh"] > 0
+    assert r["devices"]["top"][0]["name"] == "Heat pump"
     assert r["ai"] is None

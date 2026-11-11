@@ -20,7 +20,7 @@ MAX_LEN = 300
 # slide key -> what the caption should cover
 SLIDES: dict[str, str] = {
     "intro": "Opening line welcoming the household to their year in review.",
-    "persona": "One or two sentences explaining the home's personality, peak hour and busiest day.",
+    "persona": "One or two sentences explaining the home's energy personality and peak hour.",
     "energy": "Comment on grid energy use, the monthly trend and the peak day.",
     "solar": "Comment on solar production and the best day.",
     "devices": "Comment on the biggest energy-using devices.",
@@ -33,10 +33,6 @@ SLIDES: dict[str, str] = {
     "air": "Comment on the stuffiest and freshest rooms by CO2.",
     "rain": "Comment on rainfall and the wettest day.",
     "batteries": "Comment on batteries replaced and the hungriest device.",
-    "lights": "Comment on hours of light and the top lights.",
-    "doors": "Comment on door openings and the busiest door.",
-    "automations": "Comment on automation runs, time saved and the top automation.",
-    "music": "Comment on hours of music and top artists/track.",
     "setup": "Comment on devices added and how the setup grew.",
     "outro": "Closing line wrapping up the year.",
 }

@@ -1,10 +1,7 @@
 """Assemble the yearly roundup.
 
-Sources, best first:
-  1. Long-term statistics (never purged): energy, water, gas, devices, power,
-     batteries, air, steps, distance, data, counters.
-  2. Recorder history or this integration's own counters, whichever reaches
-     further back: lights, doors, motion, automations, media, people.
+Only data that covers the whole year is used: Home Assistant's long-term
+statistics (never purged) plus the device/entity registries.
 """
 
 from __future__ import annotations
@@ -22,22 +19,9 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from . import comparisons
-from .const import SECONDS_SAVED_PER_AUTOMATION
-from .history import async_read_year
 from .lts import async_read_lts
-from .tracker import RoundupTracker
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _name(hass: HomeAssistant, entity_id: str) -> str:
-    state = hass.states.get(entity_id)
-    return state.name if state else entity_id
-
-
-def _top(hass: HomeAssistant, bucket: dict[str, float], n: int = 5, names: bool = True):
-    ranked = sorted(bucket.items(), key=lambda kv: kv[1], reverse=True)[:n]
-    return [{"name": _name(hass, k) if names else k, "value": round(v, 1)} for k, v in ranked]
 
 
 async def _stats(hass, start, end, ids, types, units=None, period="day"):
@@ -147,35 +131,17 @@ def _setup(hass: HomeAssistant, start: datetime) -> dict:
     }
 
 
-def _persona(hours: list[float], automation_runs: int, manual: int, source: str) -> dict:
+def _persona(hours: list[float]) -> dict | None:
+    """Personality from the whole year's average energy use by hour."""
     if not any(hours):
-        return {"title": "The Newcomer", "emoji": "🌱", "blurb": "Your story is just getting started."}
+        return None
     peak = max(range(24), key=lambda h: hours[h])
-    what = "used the most energy" if source == "energy" else "was busiest"
-    blurb = f"Your home {what} around {peak:02d}:00."
-    if automation_runs > manual * 3 and automation_runs > 100:
-        return {"title": "The Automation Wizard", "emoji": "🧙", "blurb": "Your home mostly runs itself.", "peak_hour": peak}
+    blurb = f"Your home used the most energy around {peak:02d}:00."
     if peak >= 22 or peak <= 3:
         return {"title": "The Night Owl", "emoji": "🦉", "blurb": blurb, "peak_hour": peak}
     if 5 <= peak <= 8:
         return {"title": "The Early Bird", "emoji": "🐦", "blurb": blurb, "peak_hour": peak}
     return {"title": "The Homebody", "emoji": "🛋️", "blurb": blurb, "peak_hour": peak}
-
-
-def _activity(tracker: RoundupTracker, recorder: dict, year: int) -> dict:
-    """Use whichever of recorder history / own counters reaches further back."""
-    own = tracker.data.get(str(year))
-    rec_from = recorder["coverage"]["from"]
-    if own and own.get("first_seen", "9999")[:10] < rec_from:
-        own = dict(own)
-        own["coverage"] = {
-            "from": own["first_seen"][:10],
-            "partial": own["first_seen"][:10] > f"{year}-01-02",
-            "source": "counters",
-        }
-        return own
-    recorder["coverage"]["source"] = "recorder"
-    return recorder
 
 
 def _fact(metric: str, value: float | None, year: int) -> str | None:
@@ -185,7 +151,7 @@ def _fact(metric: str, value: float | None, year: int) -> str | None:
     return pick["text"] if pick else None
 
 
-async def async_build_roundup(hass: HomeAssistant, tracker: RoundupTracker, year: int) -> dict[str, Any]:
+async def async_build_roundup(hass: HomeAssistant, year: int) -> dict[str, Any]:
     tz = dt_util.get_default_time_zone()
     start = datetime(year, 1, 1, tzinfo=tz)
     end = min(datetime(year + 1, 1, 1, tzinfo=tz), dt_util.now())
@@ -200,71 +166,19 @@ async def async_build_roundup(hass: HomeAssistant, tracker: RoundupTracker, year
 
     energy = await safe("energy", _energy(hass, start, end, prefs))
     lts = await safe("statistics", async_read_lts(hass, start, end, prefs), {}) or {}
-    recorder = await safe("history", async_read_year(hass, start, end))
-    if recorder is None:
-        recorder = {"coverage": {"from": end.date().isoformat(), "partial": True}}
-    y = _activity(tracker, recorder, year)
-    cov = y["coverage"]
-    days_covered = (end.date() - datetime.fromisoformat(cov["from"]).date()).days + 1
-
-    hours, hours_source = y.get("hours", [0] * 24), "activity"
-    if (days_covered < 60 or not any(hours)) and energy and energy.get("hourly_profile"):
-        hours, hours_source = energy["hourly_profile"], "energy"
-
-    lights = {k: v for k, v in y.get("on_seconds", {}).items() if k.startswith("light.")}
-    automation_runs = int(sum(y.get("automations", {}).values()))
-    manual = int(sum(y.get("toggles", {}).values()))
-    days = y.get("days", {})
-    door_total = int(sum(y.get("door_opens", {}).values()))
-    light_hours = round(sum(lights.values()) / 3600)
-    music_hours = round(sum(y.get("media_seconds", {}).values()) / 3600)
+    hours = (energy or {}).pop("hourly_profile", None) or [0] * 24
 
     out: dict[str, Any] = {
         "year": year,
         "home_name": hass.config.location_name,
-        "coverage": {**cov, "days": days_covered},
-        "persona": _persona(hours, automation_runs, manual, hours_source),
+        "persona": _persona(hours),
         "hours": hours,
-        "hours_source": hours_source,
-        "busiest_day": (
-            dict(zip(("date", "events"), max(days.items(), key=lambda kv: kv[1]))) if days else None
-        ),
-        "lights": {
-            "total_hours": light_hours,
-            "top": [{"name": t["name"], "value": round(t["value"] / 3600)} for t in _top(hass, lights)],
-            "toggles": manual,
-            "fact": _fact("light_hours", light_hours, year),
-        },
-        "doors": {
-            "total": door_total,
-            "top": _top(hass, y.get("door_opens", {})),
-            "fact": _fact("door_opens", door_total * 365 / max(days_covered, 1), year),
-        },
-        "motion": int(sum(y.get("motion", {}).values())),
-        "automations": {
-            "runs": automation_runs,
-            "top": _top(hass, y.get("automations", {}), names=False),
-            "hours_saved": round(automation_runs * SECONDS_SAVED_PER_AUTOMATION / 3600, 1),
-            "fact": _fact("automation_runs", automation_runs, year),
-        },
-        "music": {
-            "hours": music_hours,
-            "top_artists": _top(hass, y.get("artists", {}), names=False),
-            "top_tracks": _top(hass, y.get("tracks", {}), names=False),
-            "fact": _fact("music_hours", music_hours, year),
-        },
-        "people": {
-            "arrivals": int(sum(y.get("arrivals", {}).values())),
-            "top_zones": _top(hass, y.get("zones", {}), 3, names=False),
-        },
         "setup": _setup(hass, start),
         "energy": energy,
         **lts,
     }
 
-    # Comparisons for the year-long sections
     if energy:
-        energy.pop("hourly_profile", None)
         if energy.get("grid"):
             energy["fact"] = _fact("grid_kwh", energy["grid"]["total_kwh"], year)
         if energy.get("solar"):

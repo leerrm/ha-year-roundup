@@ -1,24 +1,23 @@
 # Year Roundup (prototype)
 
-A yearly story for your home: energy, lights, doors, automations, music, devices added. Computed locally; nothing leaves the house.
+A yearly story for your home, built from a full year of Home Assistant's long-term statistics. Computed locally; nothing leaves the house.
 
 ## Install
 Copy `custom_components/year_roundup` into your HA config, restart, then add **Year Roundup** under Settings → Devices & services. A **Year Roundup** sidebar panel appears. A notification fires on 1 December.
 
 ## Where the data comes from
-Home Assistant keeps **long-term statistics** (hourly mean/min/max/sum for any sensor with a `state_class`) forever, so most slides cover the full year, even on a fresh install.
+Only data that covers the **whole year** is used: Home Assistant's long-term statistics (hourly mean/min/max/sum for any sensor with a `state_class`, never purged) and the device/entity registries. Recorder history is not used, because by default it only keeps 10 days. Slides only appear when the data exists.
 
-| Slide | Source | Full year? |
-|---|---|---|
-| Energy, solar, export, % self-powered, standby, energy-by-hour personality | Energy dashboard + long-term statistics | Yes |
-| Biggest energy users | Energy dashboard "individual devices" | Yes |
-| Screen time (hours each device was on) | Power (W) sensors, hourly means | Yes |
-| Water, gas | Energy dashboard or water/gas meters | Yes |
-| Batteries replaced | Battery % sensors (big upward jumps) | Yes |
-| Air quality | CO2 sensors | Yes |
-| Steps, distance, data, other counters | Any statistic by unit (steps, km, GB, pages...) | Yes |
-| Devices/automations added | Registries (`created_at`) | Yes |
-| Lights, doors, automation runs, music | Recorder history *or* Year Roundup's own counters, whichever goes back further | Only as far as the recorder keeps detail (`purge_keep_days`, default 10). From install, Year Roundup counts these itself, so future years are complete. Slides are labelled "since <date>" when partial. |
+| Slide | Source |
+|---|---|
+| Energy, solar, export, % self-powered, standby, energy-by-hour personality | Energy dashboard + long-term statistics |
+| Biggest energy users | Energy dashboard "individual devices" |
+| Screen time (hours each device was on) | Power (W) sensors, hourly means |
+| Water, gas | Energy dashboard or water/gas meters |
+| Batteries replaced | Battery % sensors (big upward jumps) |
+| Air quality | CO2 sensors |
+| Steps, distance, data, other counters | Any statistic by unit (steps, km, GB, pages...) |
+| Devices/automations added | Registries (`created_at`) |
 
 ## Optional AI captions
 In the integration options, pick an **AI Task** entity (Ollama, OpenAI, Google, Anthropic…) and write a style prompt ("roast me", "nature documentary narrator", "for kids"…).
@@ -30,8 +29,7 @@ In the integration options, pick an **AI Task** entity (Ollama, OpenAI, Google, 
 ## Files
 - `ai.py`: AI Task call, prompt, structured per-slide output
 - `lts.py`: scans all long-term statistics and turns them into year-long metrics
-- `history.py`: reads lights/doors/automations/media from the recorder database
-- `tracker.py`: counts those events from install onwards, so future years are complete
+- `store.py`: AI caption cache
 - `comparisons.py`: sourced "that's like X bathtubs" comparisons (see COMPARISONS.md)
 - `roundup.py`: builds the roundup (stats queries, top lists, persona, fun facts)
 - `__init__.py`: websocket `year_roundup/get`, sidebar panel, Dec 1 notification

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Year Roundup",
-        "description": "Start tracking your home's year. Energy statistics are backfilled; counters like door opens and top artists start from today. Optionally pick an AI Task entity to write the captions. If it is a cloud service, your roundup summary is sent to it.",
+        "description": "Builds your home's year from Home Assistant's long-term statistics, so the whole year is covered from day one. Optionally pick an AI Task entity to write the captions. If it is a cloud service, your roundup summary is sent to it.",
         "data": {
           "ai_task_entity": "AI agent (optional)",
           "style": "Caption style prompt"
