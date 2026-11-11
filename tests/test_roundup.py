@@ -107,7 +107,7 @@ async def test_websocket_end_to_end(recorder_mock, hass: HomeAssistant, hass_ws_
     assert panel.called
 
     client = await hass_ws_client(hass)
-    await client.send_json({"id": 1, "type": f"{DOMAIN}/get"})
+    await client.send_json({"id": 1, "type": f"{DOMAIN}/get", "refresh": False, "all": False})
     msg = await client.receive_json()
     assert msg["success"], msg
     r = msg["result"]

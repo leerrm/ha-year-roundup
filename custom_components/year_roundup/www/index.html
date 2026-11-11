@@ -226,7 +226,11 @@ addEventListener("keydown", e => { if (e.key === "ArrowRight") show(idx + 1); if
   if (!hass) return render(q.get("ai") ? { ...SAMPLE, ...SAMPLE_AI } : SAMPLE, true);
   const year = Number(q.get("year")) || undefined;
   try {
-    render(await hass.callWS({ type: "year_roundup/get", refresh: q.has("refresh"), all: q.has("all"), ...(year && { year }) }), false);
+    const msg = { type: "year_roundup/get" };
+    if (year) msg.year = year;
+    if (q.has("refresh")) msg.refresh = true;
+    if (q.has("all")) msg.all = true;
+    render(await hass.callWS(msg), false);
   } catch (err) {
     console.error(err);
     document.getElementById("slides").innerHTML = `<section class="slide g7 active"><div class="kicker">Year Roundup</div><h2>Something went wrong</h2><p>${esc(err.message || err)}</p><p class="small">Check Settings → System → Logs for "year_roundup".</p></section>`;
